@@ -22,7 +22,7 @@ const DRINK_ICONS = {
   'Nimbu Pani': '\u{1F34B}',
 };
 
-function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
+function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiPlan, setAiPlan] = useState(null);
@@ -31,8 +31,8 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   const [aiOverrideUsed, setAiOverrideUsed] = useState(false);
   const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
   const [swapTarget, setSwapTarget] = useState(null);
-  const [quantities, setQuantities] = useState({});
-  const [baseOverrides, setBaseOverrides] = useState({});
+  // Track which day-slot combos were placed by AI (e.g. "Monday-lunch")
+  const [aiPlacedSlots, setAiPlacedSlots] = useState(new Set());
   const initialPlanRef = useRef(null);
   const aiPlanLoadedRef = useRef(false);
 
@@ -55,6 +55,27 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
     });
   }, [skipDays, skipMeals]);
 
+  // Merge AI plan into existing plan and track which slots AI filled
+  function mergeAiPlan(prevPlan, aiData) {
+    if (!prevPlan) return aiData;
+    const merged = { ...prevPlan };
+    const placed = new Set();
+    for (const day of DAYS) {
+      merged[day] = { ...merged[day] };
+      if (!merged[day].lunch && aiData[day]?.lunch) {
+        merged[day].lunch = aiData[day].lunch;
+        placed.add(`${day}-lunch`);
+      }
+      if (!merged[day].dinner && aiData[day]?.dinner) {
+        merged[day].dinner = aiData[day].dinner;
+        placed.add(`${day}-dinner`);
+      }
+    }
+    setAiPlacedSlots(placed);
+    initialPlanRef.current = JSON.parse(JSON.stringify(merged));
+    return merged;
+  }
+
   // Generate plan on mount
   useEffect(() => {
     if (plan) {
@@ -73,25 +94,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
           .then((data) => {
             if (data.plan && data.source === 'ai') {
               setAiPlan(data.plan);
-              // Merge at least 1 AI suggestion into empty slots
-              setPlan((prevPlan) => {
-                if (!prevPlan) return data.plan;
-                const merged = { ...prevPlan };
-                let aiPlaced = false;
-                for (const day of DAYS) {
-                  merged[day] = { ...merged[day] };
-                  if (!merged[day].lunch && data.plan[day]?.lunch) {
-                    merged[day].lunch = data.plan[day].lunch;
-                    aiPlaced = true;
-                  }
-                  if (!merged[day].dinner && data.plan[day]?.dinner) {
-                    merged[day].dinner = data.plan[day].dinner;
-                    if (!aiPlaced) aiPlaced = true;
-                  }
-                }
-                initialPlanRef.current = JSON.parse(JSON.stringify(merged));
-                return merged;
-              });
+              setPlan((prev) => mergeAiPlan(prev, data.plan));
             }
             setAiLoading(false);
           })
@@ -101,7 +104,6 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
     }
 
     if (allSkipped) {
-      // No need to generate — set empty plan
       const emptyPlan = {};
       for (const day of DAYS) {
         emptyPlan[day] = { breakfast: [], drinks: [], lunch: null, dinner: null, fruit: [] };
@@ -139,17 +141,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       .then((data) => {
         if (data.plan && data.source === 'ai') {
           setAiPlan(data.plan);
-          setPlan((prevPlan) => {
-            if (!prevPlan) return data.plan;
-            const merged = { ...prevPlan };
-            for (const day of DAYS) {
-              merged[day] = { ...merged[day] };
-              if (!merged[day].lunch && data.plan[day]?.lunch) merged[day].lunch = data.plan[day].lunch;
-              if (!merged[day].dinner && data.plan[day]?.dinner) merged[day].dinner = data.plan[day].dinner;
-            }
-            initialPlanRef.current = JSON.parse(JSON.stringify(merged));
-            return merged;
-          });
+          setPlan((prev) => mergeAiPlan(prev, data.plan));
         }
         setAiLoading(false);
       })
@@ -217,7 +209,6 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
           newPlan[day].drinks = [mealId];
         }
       } else {
-        // Default: treat as breakfast add
         const current = Array.isArray(newPlan[day].breakfast) ? newPlan[day].breakfast : [];
         newPlan[day].breakfast = [...current, mealId];
       }
@@ -230,6 +221,12 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       }
     } else {
       newPlan[day][mealType] = mealId;
+      // Clear AI indicator when user manually swaps
+      setAiPlacedSlots((prev) => {
+        const next = new Set(prev);
+        next.delete(`${day}-${mealType}`);
+        return next;
+      });
     }
     setPlan(newPlan);
     setSwapTarget(null);
@@ -268,6 +265,11 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       newPlan[day].fruit = [];
     } else {
       newPlan[day][mealType] = null;
+      setAiPlacedSlots((prev) => {
+        const next = new Set(prev);
+        next.delete(`${day}-${mealType}`);
+        return next;
+      });
     }
     setPlan(newPlan);
   }
@@ -279,6 +281,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       newPlan[day] = { breakfast: [], drinks: [], lunch: null, dinner: null, fruit: [] };
     }
     setPlan(newPlan);
+    setAiPlacedSlots(new Set());
     toastRef?.current?.info('All meals cleared');
   }
 
@@ -414,21 +417,31 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
 
     const mealId = plan?.[day]?.[mealType];
     const meal = findMeal(mealId);
-    const overriddenBase = baseOverrides[`${day}-${mealType}`] || meal?.base;
-    const mealWithQty = meal
+    const overriddenBase = baseOverrides[`${day}-${mealType}`] ?? meal?.base;
+    const isAiPlaced = aiPlacedSlots.has(`${day}-${mealType}`);
+    const mealWithOverrides = meal
       ? { ...meal, qty: quantities[mealId], base: overriddenBase }
       : null;
 
     return (
       <td key={`${day}-${mealType}`} className="p-1 align-top">
-        <div className="bg-cream/50 border border-ink/10 rounded-lg min-h-[70px] p-1">
-          {mealWithQty ? (
+        <div className={`rounded-lg min-h-[70px] p-1 ${
+          isAiPlaced
+            ? 'bg-purple-50 border-2 border-purple-300'
+            : 'bg-cream/50 border border-ink/10'
+        }`}>
+          {isAiPlaced && (
+            <div className="text-[8px] text-purple-500 font-semibold text-center mb-0.5 uppercase tracking-wide">
+              AI pick
+            </div>
+          )}
+          {mealWithOverrides ? (
             <MealCard
-              meal={mealWithQty}
+              meal={mealWithOverrides}
               onRemove={() => handleRemove(day, mealType)}
               onSwap={() => setSwapTarget({ day, mealType })}
               onQtyChange={(delta) => handleQtyChange(mealId, delta)}
-              onBaseChange={meal?.base ? (newBase) => handleBaseChange(day, mealType, mealId, newBase) : undefined}
+              onBaseChange={(newBase) => handleBaseChange(day, mealType, mealId, newBase)}
             />
           ) : (
             <button
@@ -446,7 +459,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   return (
     <div className="space-y-4">
       {aiLoading && (
-        <div className="flex items-center gap-2 text-xs text-purple-400 justify-center py-1">
+        <div className="flex items-center gap-2 text-xs text-purple-500 justify-center py-2 bg-purple-50 rounded-lg border border-purple-200">
           <div className="animate-spin w-3.5 h-3.5 border-2 border-purple-200 border-t-purple-500 rounded-full" />
           AI is enhancing your plan...
         </div>
@@ -454,6 +467,12 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       {aiFailed && !aiLoading && (
         <div className="text-center text-xs text-ink/40 py-1">
           AI suggestions unavailable — using rule-based plan
+        </div>
+      )}
+      {!aiLoading && aiPlacedSlots.size > 0 && (
+        <div className="flex items-center justify-center gap-2 text-xs text-purple-600 py-1">
+          <span className="inline-block w-3 h-3 rounded border-2 border-purple-300 bg-purple-50" />
+          Purple cells = AI-enhanced picks ({aiPlacedSlots.size} slots)
         </div>
       )}
 

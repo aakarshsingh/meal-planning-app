@@ -35,7 +35,7 @@ const UNIT_LABELS = {
   pc: 'piece',
 };
 
-function GroceryList({ plan, leftovers }) {
+function GroceryList({ plan, leftovers, baseOverrides = {} }) {
   const [groceryData, setGroceryData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -56,7 +56,7 @@ function GroceryList({ plan, leftovers }) {
     fetch('/api/groceries/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, leftovers }),
+      body: JSON.stringify({ plan, leftovers, baseOverrides }),
     })
       .then((r) => r.json())
       .then((data) => {

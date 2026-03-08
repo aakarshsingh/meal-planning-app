@@ -14,7 +14,31 @@ const FRUIT_ICONS = {
   'Papaya': '\u{1F352}',
 };
 
-const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles'];
+const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles', 'none'];
+const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', noodles: 'Noodles', none: 'No base' };
+
+// Bases that are countable (show qty +/- buttons)
+const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
+
+// Breakfasts that should show qty +/- buttons
+const COUNTABLE_BREAKFASTS = ['bread', 'aloo paratha', 'chilla', 'french toast', 'toast'];
+
+function isCountable(meal) {
+  // Lunch/dinner: countable only if base is roti/paratha/pav
+  if (meal.base && COUNTABLE_BASES.includes(meal.base)) return true;
+  // Breakfasts: specific items are countable
+  if (meal.id?.startsWith('bf-')) {
+    const nameLower = meal.name?.toLowerCase() || '';
+    return COUNTABLE_BREAKFASTS.some((cb) => nameLower.includes(cb));
+  }
+  return false;
+}
+
+function formatTitle(meal) {
+  if (!meal.base || meal.base === 'none') return meal.name;
+  // "Palak Paneer + Roti" style
+  return `${meal.name} + ${BASE_LABELS[meal.base] || meal.base}`;
+}
 
 function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
   if (!meal) return null;
@@ -24,6 +48,8 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
   const icon = isFruit
     ? (FRUIT_ICONS[meal.name] || '\u{1F34E}')
     : TYPE_ICONS[meal.type] || '';
+  const showQty = isCountable(meal);
+  const hasBase = meal.base !== undefined;
 
   return (
     <div
@@ -36,31 +62,27 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
       <div className="flex items-start gap-1 mb-1">
         {icon && <span className="text-base leading-none">{icon}</span>}
         <span className="font-medium text-ink leading-tight text-xs line-clamp-2 flex-1">
-          {meal.name}
+          {formatTitle(meal)}
         </span>
       </div>
 
-      {meal.base && (
+      {hasBase && onBaseChange && (
         <div className="flex items-center gap-1 mb-1">
-          {onBaseChange ? (
-            <div className="flex gap-0.5 flex-wrap">
-              {BASE_OPTIONS.map((b) => (
-                <button
-                  key={b}
-                  onClick={(e) => { e.stopPropagation(); onBaseChange(b); }}
-                  className={`text-[9px] px-1 py-0.5 rounded capitalize transition-colors ${
-                    meal.base === b
-                      ? 'bg-primary text-white'
-                      : 'bg-primary/10 text-primary hover:bg-primary/20'
-                  }`}
-                >
-                  {b}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <span className="text-[10px] text-ink/40 capitalize">{meal.base}</span>
-          )}
+          <div className="flex gap-0.5 flex-wrap">
+            {BASE_OPTIONS.map((b) => (
+              <button
+                key={b}
+                onClick={(e) => { e.stopPropagation(); onBaseChange(b); }}
+                className={`text-[9px] px-1 py-0.5 rounded capitalize transition-colors ${
+                  meal.base === b
+                    ? 'bg-primary text-white'
+                    : 'bg-primary/10 text-primary hover:bg-primary/20'
+                }`}
+              >
+                {BASE_LABELS[b] || b}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -85,16 +107,16 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
             </button>
           )}
         </div>
-        {onQtyChange && meal.defaultQty && (
-          <div className="flex items-center gap-0.5">
+        {showQty && onQtyChange && (
+          <div className="flex items-center gap-0.5" title={`Qty: ${meal.qty || meal.defaultQty || 2}`}>
             <button
               onClick={(e) => { e.stopPropagation(); onQtyChange(-1); }}
               className="w-5 h-5 rounded text-[10px] border border-ink/15 hover:bg-primary-light text-ink/60"
             >
               -
             </button>
-            <span className="text-[10px] text-ink/60 w-4 text-center">
-              {meal.qty || meal.defaultQty}
+            <span className="text-[10px] text-ink/60 w-4 text-center font-medium">
+              {meal.qty || meal.defaultQty || 2}
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); onQtyChange(1); }}

@@ -27,7 +27,7 @@ meal-planner/
 │   ├── routes/
 │   │   ├── meals.js             # GET/POST/PUT/DELETE master meals and ingredients
 │   │   ├── planner.js           # Current week CRUD, finalize to history
-│   │   ├── groceries.js         # Grocery list generation
+│   │   ├── groceries.js         # Grocery list generation (accepts baseOverrides)
 │   │   ├── suggest.js           # Rule-based suggestion engine routes
 │   │   └── ai.js                # Claude API proxy routes (with noOp for all-skipped)
 │   └── utils/
@@ -36,15 +36,15 @@ meal-planner/
 │       ├── groceryBuilder.js    # Aggregate ingredients, subtract leftovers, group by category
 │       └── prompts.js           # Claude API prompt templates (type-specific swaps, grocery fixes)
 ├── src/
-│   ├── App.jsx                  # 3-step wizard with clickable steps, auto-save, resume, validation
+│   ├── App.jsx                  # 3-step wizard, lifted qty/base state, auto-save, resume, validation
 │   └── components/
 │       ├── LeftoverInput.jsx    # Screen 1: pantry stock input, fraction qty support
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
-│       ├── MealGrid.jsx         # Screen 3: HTML table grid, click-to-add/swap via modal
-│       ├── MealCard.jsx         # Meal tile with base swap, qty adjust, swap/remove buttons
+│       ├── MealGrid.jsx         # Screen 3: HTML table grid, AI-placed indicators, click-to-add/swap
+│       ├── MealCard.jsx         # Meal tile: "Name + Base" title, base swap (incl. none), smart qty
 │       ├── SwapModal.jsx        # 3-section modal: AI suggestions, rule-based, everything else
 │       ├── GroceryList.jsx      # Auto-AI-optimized grocery with edit/remove per item
-│       ├── WeeklyChart.jsx      # Copyable day-wise meal text
+│       ├── WeeklyChart.jsx      # Copyable day-wise meal text with base/qty overrides
 │       ├── Toast.jsx            # Toast notification system (success/error/warning)
 │       └── ManageMealsModal.jsx # CRUD meals with dedup check, categories, inline edit/delete
 ├── .env                         # ANTHROPIC_API_KEY=sk-ant-...
@@ -63,21 +63,31 @@ meal-planner/
 - **Servings**: All quantities are total for 2 people (not per person)
 - **Meal slots**: Breakfast (includes drinks), Lunch, Dinner, Fruit — 4 visual rows in the grid
 - **Plan days**: Monday through Saturday (6 days)
-- **Meal definition**: Each meal is just the dish name (e.g., "Palak Paneer") with a suggestive base (e.g., paratha) that can be changed per-cell
+- **Building blocks**: Each meal = main dish + base. Title shows "Palak Paneer + Roti". Base can be rice/roti/paratha/pav/noodles/none
+- **No-base meals**: Dishes like Biryani, Veg Pulao use base "none" — no accompaniment needed
+- **Countable qty**: Only roti/paratha/pav bases show qty +/- buttons. Also countable breakfasts: Bread, Aloo Paratha, Chilla, French Toast. Rice/noodles/none are non-countable
 - **Breakfast**: Auto-suggested from a rotation of 9 options, user can swap via modal
 - **Lunch/Dinner**: Flexible — same meal can go in either slot. 22+ meals in master list
 - **Chicken**: Target 2 dishes per week (configurable in config.json)
 - **No-repeat rule**: Don't repeat meals from the last 2 weeks (reads history.json)
 - **Within-week uniqueness**: No same meal twice in a single week
 - **Fruits**: Shown as a separate row in the meal grid, 1-2 per day, 6 fruits available
-- **Grocery calculation**: Dynamically calculated from planned meals, subtract leftovers, round up to purchase units, group by category, AI-fixed quantities
+- **Grocery calculation**: Dynamically calculated from planned meals (with base overrides), subtract leftovers, round up to purchase units, group by category, AI-fixed quantities
+
+## State Management
+
+- **Lifted state**: `quantities` and `baseOverrides` are owned by App.jsx, not MealGrid
+- **Persistence**: qty/base changes persist across Edit ↔ Review transitions
+- **Auto-save**: current-week.json saves quantities and baseOverrides (debounced 2s)
+- **Resume**: Restores quantities and baseOverrides from saved state
+- **AI tracking**: `aiPlacedSlots` Set in MealGrid tracks which day-slot combos were AI-placed (purple indicator)
 
 ## Data File Formats
 
 ### master-meals.json
 - `meta`: servings, cuisine, chickenPerWeek
 - `breakfasts[]`: id (bf-XX), name, defaultQty, unit, accompaniment, ingredients[]
-- `meals[]`: id (meal-XX), name, type (veg/egg/chicken), slot (flexible/dinner), base (rice/paratha/roti/pav/noodles), ingredients[]
+- `meals[]`: id (meal-XX), name, type (veg/egg/chicken), slot (flexible/dinner), base (rice/paratha/roti/pav/noodles/none), ingredients[]
 - `drinks[]`: id (drink-XX), name, ingredients[]
 - `fruits[]`: id (fruit-XX), name, defaultQty, unit, season
 - Each ingredient reference: `{ ingredientId, qty, unit }`
@@ -89,7 +99,7 @@ meal-planner/
 - `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs]
 
 ### current-week.json
-- weekStart, weekEnd, leftovers[], preferences{}, plan{}, groceryList[], finalized
+- weekStart, weekEnd, leftovers[], preferences{}, plan{}, quantities{}, baseOverrides{}, groceryList[], finalized
 
 ### config.json
 - household: servings, cuisine, planDays, mealSlots
@@ -111,8 +121,8 @@ meal-planner/
 
 API calls are budgeted to save costs:
 
-1. **Plan generation** (Screen 3 load): Single call to `/api/ai/generate-plan`. AI plan merged into grid (at least 1 AI meal guaranteed). Cached for SwapModal AI suggestions. NoOp if all days are skipped.
-2. **Grocery optimization** (automatic on Review Plan): Auto-called when user clicks "Review Plan". Returns suggestions + quantity fixes (e.g., Mushroom 200g not pk, Coriander 1 bunch). No manual button needed.
+1. **Plan generation** (Screen 3 load): Single call to `/api/ai/generate-plan`. AI meals merged into empty grid slots. AI-placed cells shown with purple border + "AI pick" badge. NoOp if all days are skipped.
+2. **Grocery optimization** (automatic on Review Plan): Auto-called when user clicks "Review Plan". Returns suggestions + quantity fixes (e.g., Mushroom 200g not pk, Coriander 1 bunch).
 3. **Swap override** (user-triggered, max 1 per session): "Get fresh AI suggestions" button in SwapModal. Type-specific: breakfast slots get breakfast suggestions, lunch/dinner get meal suggestions.
 4. **SwapModal default**: Rule-based suggestions + cached AI meals from call #1 + "Everything else" full list. No API call on open.
 5. Always fall back to rule-based engine if API fails — never block the user
@@ -123,12 +133,12 @@ API calls are budgeted to save costs:
 Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Grid) → Screen 3 Part 2 (Review + Finalize)
 ```
 
-- **Header**: Calendar dropdown week picker, "Manage Meals" button
+- **Header**: Calendar dropdown week picker (local timezone safe), "Manage Meals" button
 - **Step indicators**: Clickable — can navigate back to Pantry Stock or Preferences from any later step
 - **Screen 1**: Autocomplete ingredient search, fraction qty support
 - **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, chicken count stepper
-- **Screen 3 Part 1** (Edit): HTML table grid (proper alignment), click empty slot → SwapModal, Clear All / Restore buttons, "Review Plan" button
-- **Screen 3 Part 2** (Review): Weekly Chart + AI-optimized Grocery List + "Back to Edit" (no API call) + "Finalize Week"
+- **Screen 3 Part 1** (Edit): HTML table grid, purple-bordered AI-placed cells, click empty slot → SwapModal, base swap buttons (incl. "No base"), smart qty buttons, Clear All / Restore, "Review Plan" button
+- **Screen 3 Part 2** (Review): Weekly Chart (with base/qty overrides) + AI-optimized Grocery List + "Back to Edit" (no API call) + "Finalize Week"
 - **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else (full filtered list). Search filter, "Add & Use" for new dishes.
 - **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Fruits), inline edit, delete with confirmation, duplicate prevention
 - **GroceryList**: Auto-optimized, per-item edit (click to change qty/unit) and remove (x button)
@@ -140,6 +150,7 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - Meal type indicators: 🥚 egg, 🍗 chicken (no icon for veg)
 - Per-fruit emoji icons, per-drink emoji icons
 - Chicken meals get gold accent highlight
+- AI-placed cells: purple border + "AI pick" label
 - Skipped days greyed out
 - Responsive: grid scrolls horizontally on mobile
 
@@ -148,7 +159,9 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - All file I/O goes through `fileStore.js` — never read/write JSON directly in routes
 - Never modify the seed data files structure — only append/update values
 - API key must never be exposed to the frontend — all Claude calls go through `/api/ai/*` routes
-- Auto-save current-week.json on every plan change (debounced 2s)
+- Auto-save current-week.json on every plan change (debounced 2s), includes quantities and baseOverrides
 - On app load, if current-week.json has existing plan, prompt "Resume?" or "Start fresh"
 - "Back to Edit" from Review must NOT trigger any API calls
 - All days/meals skipped → noOp, no API call
+- Date handling uses `toLocalDateStr()` — never `toISOString().slice(0,10)` (UTC shift bug in IST)
+- Qty/base overrides are lifted to App.jsx so they persist across Edit ↔ Review transitions

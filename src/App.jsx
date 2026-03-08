@@ -10,6 +10,14 @@ import { ToastContainer } from './components/Toast';
 const STEP_LABELS = ['Pantry Stock', 'Preferences', 'Meal Plan'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// Format date as YYYY-MM-DD using LOCAL timezone (not UTC)
+function toLocalDateStr(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function getWeekMonday(date) {
   const d = new Date(date);
   const dayOfWeek = d.getDay();
@@ -60,7 +68,8 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
     if (!day) return;
     const clicked = new Date(year, month, day);
     if (clicked.getDay() !== 1) return;
-    onSelect(clicked.toISOString().slice(0, 10));
+    // Use local date string — NOT toISOString() which converts to UTC
+    onSelect(toLocalDateStr(clicked));
     setOpen(false);
   }
 
@@ -191,6 +200,9 @@ function App() {
   const [finalized, setFinalized] = useState(false);
   const [showManageMeals, setShowManageMeals] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(null);
+  // Lifted state: qty/base overrides persist across Edit ↔ Review
+  const [quantities, setQuantities] = useState({});
+  const [baseOverrides, setBaseOverrides] = useState({});
 
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
@@ -198,16 +210,16 @@ function App() {
     if (dayOfWeek === 6 || dayOfWeek === 0) {
       const nextMon = new Date(now);
       nextMon.setDate(now.getDate() + (dayOfWeek === 0 ? 1 : 2));
-      return nextMon.toISOString().slice(0, 10);
+      return toLocalDateStr(nextMon);
     }
-    return getWeekMonday(now).toISOString().slice(0, 10);
+    return toLocalDateStr(getWeekMonday(now));
   });
 
-  const weekSaturday = (() => {
+  const weekSaturdayStr = (() => {
     const mon = new Date(weekMonday + 'T00:00:00');
     const sat = new Date(mon);
     sat.setDate(mon.getDate() + 5);
-    return sat;
+    return toLocalDateStr(sat);
   })();
 
   const toastRef = useRef(null);
@@ -245,10 +257,12 @@ function App() {
     autoSaveTimer.current = setTimeout(() => {
       const currentWeek = {
         weekStart: weekMonday,
-        weekEnd: weekSaturday.toISOString().slice(0, 10),
+        weekEnd: weekSaturdayStr,
         leftovers,
         preferences,
         plan,
+        quantities,
+        baseOverrides,
         groceryList: [],
         finalized: false,
       };
@@ -259,7 +273,7 @@ function App() {
         body: JSON.stringify(currentWeek),
       }).catch(() => {});
     }, 2000);
-  }, [plan, leftovers, preferences, weekMonday, weekSaturday]);
+  }, [plan, leftovers, preferences, weekMonday, weekSaturdayStr, quantities, baseOverrides]);
 
   useEffect(() => {
     autoSave();
@@ -274,6 +288,8 @@ function App() {
     if (resumePrompt.leftovers) setLeftovers(resumePrompt.leftovers);
     if (resumePrompt.preferences) setPreferences(resumePrompt.preferences);
     if (resumePrompt.weekStart) setWeekMonday(resumePrompt.weekStart);
+    if (resumePrompt.quantities) setQuantities(resumePrompt.quantities);
+    if (resumePrompt.baseOverrides) setBaseOverrides(resumePrompt.baseOverrides);
     setStep(2);
     setResumePrompt(null);
     toastRef.current?.success('Resumed previous plan');
@@ -284,10 +300,8 @@ function App() {
   }
 
   function handleStepClick(targetStep) {
-    // Can only go back, not forward past current
     if (targetStep < step) {
       if (step === 2 && planReady) {
-        // If in review mode, go back to edit first
         setPlanReady(false);
         if (targetStep < 2) {
           setStep(targetStep);
@@ -362,7 +376,6 @@ function App() {
   }
 
   function handleBackToEdit() {
-    // Just toggle view — no API call
     setPlanReady(false);
   }
 
@@ -384,10 +397,12 @@ function App() {
 
     const currentWeek = {
       weekStart: weekMonday,
-      weekEnd: weekSaturday.toISOString().slice(0, 10),
+      weekEnd: weekSaturdayStr,
       leftovers,
       preferences,
       plan,
+      quantities,
+      baseOverrides,
       groceryList: [],
       finalized: false,
     };
@@ -418,6 +433,8 @@ function App() {
             specialRequests: [],
             chickenCount: 2,
           });
+          setQuantities({});
+          setBaseOverrides({});
           setFinalized(false);
           setStep(0);
         }, 2000);
@@ -450,7 +467,6 @@ function App() {
       </header>
 
       <main className={`mx-auto px-4 py-6 ${step === 2 ? 'max-w-6xl' : 'max-w-4xl'}`}>
-        {/* Resume prompt */}
         {resumePrompt && (
           <div className="mb-6 bg-primary-light border border-primary/20 rounded-xl p-4 flex items-center justify-between">
             <div>
@@ -498,7 +514,6 @@ function App() {
 
         {step === 2 && (
           <div className="space-y-6">
-            {/* Phase 1: Editable grid */}
             {!planReady && (
               <>
                 <MealGrid
@@ -506,6 +521,10 @@ function App() {
                   preferences={preferences}
                   plan={plan}
                   setPlan={setPlan}
+                  quantities={quantities}
+                  setQuantities={setQuantities}
+                  baseOverrides={baseOverrides}
+                  setBaseOverrides={setBaseOverrides}
                   onBack={() => setStep(1)}
                   toastRef={toastRef}
                 />
@@ -523,7 +542,6 @@ function App() {
               </>
             )}
 
-            {/* Phase 2: Review — chart, grocery, finalize */}
             {planReady && plan && masterMeals && (
               <>
                 <div className="flex items-center justify-between">
@@ -537,7 +555,6 @@ function App() {
                   <div className="w-24" />
                 </div>
 
-                {/* Validation warnings */}
                 {(() => {
                   const { warnings } = validatePlan();
                   if (warnings.length === 0) return null;
@@ -556,11 +573,12 @@ function App() {
                   plan={plan}
                   masterMeals={masterMeals}
                   preferences={preferences}
+                  baseOverrides={baseOverrides}
+                  quantities={quantities}
                 />
 
-                <GroceryList plan={plan} leftovers={leftovers} />
+                <GroceryList plan={plan} leftovers={leftovers} baseOverrides={baseOverrides} />
 
-                {/* Finalize button */}
                 <div className="flex justify-center pt-2 pb-8">
                   {finalized ? (
                     <div className="px-6 py-3 rounded-xl bg-green-100 border border-green-300 text-green-700 font-medium">

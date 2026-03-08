@@ -1,6 +1,8 @@
 import { useState } from 'react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', noodles: 'Noodles', none: '' };
+const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 
 function CopyButton({ text, label }) {
   const [copied, setCopied] = useState(false);
@@ -26,7 +28,7 @@ function CopyButton({ text, label }) {
   );
 }
 
-function WeeklyChart({ plan, masterMeals, preferences }) {
+function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quantities = {} }) {
   if (!plan || !masterMeals) return null;
 
   const { skipDays = [] } = preferences;
@@ -41,12 +43,35 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
     );
   }
 
-  function formatMealText(mealId) {
+  function formatMealText(mealId, day, slot) {
     const meal = findMeal(mealId);
     if (!meal) return 'None';
-    const qty = meal.defaultQty ? ` x ${meal.defaultQty}` : '';
+
+    // Use overridden base if available
+    const slotKey = `${day}-${slot}`;
+    const base = baseOverrides[slotKey] ?? meal.base;
+
+    // Build name with base
+    let name = meal.name;
+    if (base && base !== 'none') {
+      name = `${meal.name} + ${BASE_LABELS[base] || base}`;
+    }
+
+    // Use overridden qty for countable items
+    const isCountable = COUNTABLE_BASES.includes(base);
+    if (isCountable) {
+      const qty = quantities[mealId] || meal.defaultQty || 2;
+      return `${name} x ${qty}`;
+    }
+
+    // For breakfasts with qty
+    if (meal.id?.startsWith('bf-') && meal.defaultQty) {
+      const qty = quantities[mealId] || meal.defaultQty;
+      return `${name} x ${qty}`;
+    }
+
     const accompaniment = meal.accompaniment ? `${meal.accompaniment}, ` : '';
-    return `${accompaniment}${meal.name}${qty}`;
+    return `${accompaniment}${name}`;
   }
 
   function formatArraySlot(ids) {
@@ -65,14 +90,14 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
     const drinkIds = Array.isArray(d.drinks) ? d.drinks : (d.drinks ? [d.drinks] : []);
     const lines = [
       `${day}:`,
-      `  Breakfast: ${bfIds.length > 0 ? bfIds.map((id) => formatMealText(id)).join(' + ') : 'None'}`,
+      `  Breakfast: ${bfIds.length > 0 ? bfIds.map((id) => formatMealText(id, day, 'breakfast')).join(' + ') : 'None'}`,
     ];
     if (drinkIds.length > 0) {
       lines.push(`  Drinks: ${formatArraySlot(drinkIds)}`);
     }
     lines.push(
-      `  Lunch: ${formatMealText(d.lunch)}`,
-      `  Dinner: ${formatMealText(d.dinner)}`,
+      `  Lunch: ${formatMealText(d.lunch, day, 'lunch')}`,
+      `  Dinner: ${formatMealText(d.dinner, day, 'dinner')}`,
       `  Fruit: ${formatArraySlot(d.fruit)}`,
     );
     return lines.join('\n');
@@ -126,7 +151,7 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
                   <div>
                     <span className="text-primary font-medium">Breakfast</span>
                     <p className="text-ink mt-0.5">
-                      {bfIds.length > 0 ? bfIds.map((id) => formatMealText(id)).join(' + ') : 'None'}
+                      {bfIds.length > 0 ? bfIds.map((id) => formatMealText(id, day, 'breakfast')).join(' + ') : 'None'}
                     </p>
                   </div>
                   {drinkIds.length > 0 && (
@@ -137,11 +162,11 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
                   )}
                   <div>
                     <span className="text-primary font-medium">Lunch</span>
-                    <p className="text-ink mt-0.5">{formatMealText(d.lunch)}</p>
+                    <p className="text-ink mt-0.5">{formatMealText(d.lunch, day, 'lunch')}</p>
                   </div>
                   <div>
                     <span className="text-primary font-medium">Dinner</span>
-                    <p className="text-ink mt-0.5">{formatMealText(d.dinner)}</p>
+                    <p className="text-ink mt-0.5">{formatMealText(d.dinner, day, 'dinner')}</p>
                   </div>
                   <div>
                     <span className="text-primary font-medium">Fruit</span>
