@@ -6,7 +6,7 @@ const TYPE_OPTIONS = [
   { value: 'egg', label: 'Egg' },
   { value: 'chicken', label: 'Chicken' },
 ];
-const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles'];
+const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles', 'none'];
 const SLOT_OPTIONS = [
   { value: 'flexible', label: 'Flexible' },
   { value: 'dinner', label: 'Dinner only' },
@@ -74,7 +74,7 @@ function ManageMealsModal({ onClose, toastRef }) {
       name: item.name,
       type: item.type || 'veg',
       slot: item.slot || 'flexible',
-      base: item.base || '',
+      base: item.base ?? 'rice',
       category,
     });
   }
@@ -253,7 +253,7 @@ function ManageMealsModal({ onClose, toastRef }) {
                 className="flex-1 px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
               >
                 {BASE_OPTIONS.map((b) => (
-                  <option key={b} value={b}>{b}</option>
+                  <option key={b} value={b}>{b === 'none' ? 'No base' : b}</option>
                 ))}
               </select>
             </div>
@@ -282,7 +282,7 @@ function ManageMealsModal({ onClose, toastRef }) {
         >
           {item.name}
         </span>
-        {isMeal && item.base && <span className="text-[10px] text-ink/40 capitalize shrink-0">{item.base}</span>}
+        {isMeal && item.base && item.base !== 'none' && <span className="text-[10px] text-ink/40 capitalize shrink-0">{item.base}</span>}
         <button
           onClick={() => setDeleteConfirm(item.id)}
           className="text-ink/20 hover:text-accent ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
