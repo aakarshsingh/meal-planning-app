@@ -164,7 +164,7 @@ meal-planner/
 │       ├── groceryBuilder.js    # Aggregate ingredients, subtract leftovers, group by category
 │       └── prompts.js           # Claude API prompt templates
 ├── src/
-│   ├── App.jsx                  # 3-step wizard: Leftovers → Preferences → Grid
+│   ├── App.jsx                  # 3-step wizard with auto-save, resume, validation
 │   └── components/
 │       ├── LeftoverInput.jsx    # Screen 1: autocomplete ingredient search, qty input
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
@@ -172,7 +172,9 @@ meal-planner/
 │       ├── MealCard.jsx         # Draggable meal tile with swap/remove/qty buttons
 │       ├── SwapModal.jsx        # Modal with rule-based + AI swap suggestions
 │       ├── GroceryList.jsx      # Categorized grocery output with copy button
-│       └── WeeklyChart.jsx      # Copyable day-wise meal text
+│       ├── WeeklyChart.jsx      # Copyable day-wise meal text
+│       ├── Toast.jsx            # Toast notification system (success/error/warning)
+│       └── ManageMealsModal.jsx # View all meals, add new meal to master list
 ├── .env                         # ANTHROPIC_API_KEY=sk-ant-...
 ├── .env.example
 └── package.json
