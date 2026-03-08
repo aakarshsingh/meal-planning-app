@@ -5,6 +5,8 @@ import { readJSON } from './utils/fileStore.js';
 import mealsRouter from './routes/meals.js';
 import plannerRouter from './routes/planner.js';
 import suggestRouter from './routes/suggest.js';
+import groceriesRouter from './routes/groceries.js';
+import aiRouter from './routes/ai.js';
 
 dotenv.config();
 
@@ -35,6 +37,8 @@ app.get('/api/ingredients', async (req, res) => {
 });
 app.use('/api/planner', plannerRouter);
 app.use('/api/suggest', suggestRouter);
+app.use('/api/groceries', groceriesRouter);
+app.use('/api/ai', aiRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -30,7 +30,7 @@
 ### Milestone 3: Suggestion Engine (Rule-Based)
 - [x] `server/utils/suggestionEngine.js` — `generateWeeklyPlan(leftovers, preferences, history)` returns full week plan
 - [x] Breakfast: auto-rotate 9 options, no consecutive repeats, prefer leftover-using breakfasts
-- [x] Lunch/Dinner: exclude meals from last 3 weeks (history.json), score +3 leftover usage / +1 base alternation / -10 same week
+- [x] Lunch/Dinner: exclude meals from last 2 weeks (history.json), score +3 leftover usage / +1 base alternation / -10 same week
 - [x] Enforce exactly 2 chicken meals per week (from config.json), rest veg/egg
 - [x] No same meal twice within a week
 - [x] Respect skipDays and skipMeals from preferences
@@ -40,25 +40,25 @@
 - [x] **Verify**: `POST /api/suggest/plan` with empty leftovers → 6 days filled, 2 chicken, no repeats
 
 ### Milestone 4: Grocery Builder
-- [ ] `server/utils/groceryBuilder.js` — `buildGroceryList(plan, leftovers)`
-- [ ] Aggregate ingredients from all planned meals for the week
-- [ ] Subtract leftover quantities
-- [ ] Round up to purchase units (from ingredients.json purchaseUnit/purchaseQty)
-- [ ] Always include milk, atta, oil, rice (config.json groceryDefaults.alwaysInclude)
-- [ ] Skip alwaysInStock items unless plan needs significantly more
-- [ ] Group by category: vegetable, dairy, protein, staple, bakery, ready-mix, fruit
-- [ ] `server/routes/groceries.js` — `POST /api/groceries/generate`
-- [ ] **Verify**: Generate plan → generate grocery list → items grouped by category, leftover quantities subtracted
+- [x] `server/utils/groceryBuilder.js` — `buildGroceryList(plan, leftovers)`
+- [x] Aggregate ingredients from all planned meals for the week
+- [x] Subtract leftover quantities
+- [x] Round up to purchase units (from ingredients.json purchaseUnit/purchaseQty)
+- [x] Always include milk, atta, oil, rice (config.json groceryDefaults.alwaysInclude)
+- [x] Skip alwaysInStock items unless plan needs significantly more
+- [x] Group by category: vegetable, dairy, protein, staple, bakery, ready-mix, fruit
+- [x] `server/routes/groceries.js` — `POST /api/groceries/generate`
+- [x] **Verify**: Generate plan → generate grocery list → items grouped by category, leftover quantities subtracted
 
 ### Milestone 5: Claude AI Integration
-- [ ] `server/utils/prompts.js` — prompt templates for plan generation, swap, grocery optimization
-- [ ] `server/routes/ai.js`:
-  - [ ] `POST /api/ai/generate-plan` — Claude generates full week plan as JSON, validate meal IDs exist
-  - [ ] `POST /api/ai/swap-suggestions` — 5 alternatives with reasoning
-  - [ ] `POST /api/ai/optimize-grocery` — bulk buy tips, missing staples, skip suggestions
-- [ ] Fallback to rule-based engine if Claude API fails (no error shown to user)
-- [ ] API key read from `.env`, never exposed to frontend
-- [ ] **Verify**: With ANTHROPIC_API_KEY set, `POST /api/ai/generate-plan` returns valid plan
+- [x] `server/utils/prompts.js` — prompt templates for plan generation, swap, grocery optimization
+- [x] `server/routes/ai.js`:
+  - [x] `POST /api/ai/generate-plan` — Claude generates full week plan as JSON, validate meal IDs exist
+  - [x] `POST /api/ai/swap-suggestions` — 5 alternatives with reasoning
+  - [x] `POST /api/ai/optimize-grocery` — bulk buy tips, missing staples, skip suggestions
+- [x] Fallback to rule-based engine if Claude API fails (no error shown to user)
+- [x] API key read from `.env`, never exposed to frontend
+- [x] **Verify**: With ANTHROPIC_API_KEY set, `POST /api/ai/generate-plan` returns valid plan
 
 ### Milestone 6: Screen 1 — Leftover Input
 - [ ] `src/App.jsx` — 3-step wizard with step indicator, Next/Back nav, global state for leftovers/preferences/plan/groceryList
@@ -192,7 +192,7 @@ meal-planner/
 - **Breakfast**: Auto-suggested from a rotation of 9 options, user can override via drag-and-drop
 - **Lunch/Dinner**: Flexible — same meal can go in either slot. 22 meals in master list
 - **Chicken**: Target 2 dishes per week (configurable in config.json)
-- **No-repeat rule**: Don't repeat meals from the last 3 weeks (reads history.json)
+- **No-repeat rule**: Don't repeat meals from the last 2 weeks (reads history.json)
 - **Within-week uniqueness**: No same meal twice in a single week
 - **Fruits**: Shown as a separate row in the meal grid, 1-2 per day, 6 fruits available
 - **Grocery calculation**: Dynamically calculated from planned meals, subtract leftovers, round up to purchase units, group by category
@@ -223,7 +223,7 @@ meal-planner/
 
 ## Suggestion Engine Logic
 
-1. Load last 3 weeks from history.json → get used meal IDs
+1. Load last 2 weeks from history.json → get used meal IDs
 2. Filter master meals: exclude recently used, exclude already-in-current-week
 3. Score candidates: +3 uses leftover ingredient, +1 alternates rice/paratha base, -10 already this week
 4. Enforce: exactly N chicken meals (from config), rest veg/egg
@@ -233,7 +233,7 @@ meal-planner/
 
 ## Claude API Usage Points
 
-1. **Plan generation**: Send master meals + leftovers + preferences + last 3 weeks → get full week plan as JSON
+1. **Plan generation**: Send master meals + leftovers + preferences + last 2 weeks → get full week plan as JSON
 2. **Swap suggestions**: Send current slot context → get 5 alternatives with reasoning
 3. **Grocery optimization**: Send grocery list → get bulk buy tips, missing staples, skip suggestions
 4. Always fall back to rule-based engine if API fails
