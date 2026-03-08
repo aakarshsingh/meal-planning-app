@@ -10,7 +10,10 @@ function formatMealList(masterMeals) {
   const fruits = masterMeals.fruits
     .map((f) => `  ${f.id}: ${f.name}`)
     .join('\n');
-  return `Breakfasts:\n${breakfasts}\n\nLunch/Dinner meals:\n${meals}\n\nFruits:\n${fruits}`;
+  const drinks = (masterMeals.drinks || [])
+    .map((d) => `  ${d.id}: ${d.name}`)
+    .join('\n');
+  return `Breakfasts:\n${breakfasts}\n\nDrinks:\n${drinks}\n\nLunch/Dinner meals:\n${meals}\n\nFruits:\n${fruits}`;
 }
 
 function formatLeftovers(leftovers) {
@@ -83,27 +86,59 @@ Respond with ONLY a JSON object in this exact format, no other text:
 }
 
 export function buildSwapPrompt(day, mealType, currentPlan, masterMeals, reason) {
-  const currentMealId = currentPlan[day]?.[mealType];
-  const currentMeal = currentMealId
-    ? masterMeals.meals.find((m) => m.id === currentMealId) ||
-      masterMeals.breakfasts.find((b) => b.id === currentMealId)
-    : null;
-
   const usedThisWeek = new Set();
   for (const d of DAYS) {
     if (!currentPlan[d]) continue;
+    const bfIds = Array.isArray(currentPlan[d].breakfast) ? currentPlan[d].breakfast : (currentPlan[d].breakfast ? [currentPlan[d].breakfast] : []);
+    for (const id of bfIds) usedThisWeek.add(id);
+    const drinkIds = Array.isArray(currentPlan[d].drinks) ? currentPlan[d].drinks : (currentPlan[d].drinks ? [currentPlan[d].drinks] : []);
+    for (const id of drinkIds) usedThisWeek.add(id);
     if (currentPlan[d].lunch) usedThisWeek.add(currentPlan[d].lunch);
     if (currentPlan[d].dinner) usedThisWeek.add(currentPlan[d].dinner);
+    for (const f of currentPlan[d].fruit || []) usedThisWeek.add(f);
   }
 
-  const available = masterMeals.meals
-    .filter((m) => !usedThisWeek.has(m.id) || m.id === currentMealId)
-    .filter((m) => {
-      if (m.slot === 'dinner' && mealType !== 'dinner') return false;
-      return true;
-    })
-    .map((m) => `${m.id}: ${m.name} [${m.type}, ${m.base}]`)
-    .join('\n  ');
+  // Type-specific: send the right pool based on mealType
+  let available;
+  let currentMealId;
+  let currentMeal;
+
+  if (mealType === 'breakfast') {
+    currentMealId = Array.isArray(currentPlan[day]?.breakfast) ? currentPlan[day].breakfast[0] : currentPlan[day]?.breakfast;
+    currentMeal = currentMealId ? masterMeals.breakfasts.find((b) => b.id === currentMealId) : null;
+    available = masterMeals.breakfasts
+      .filter((b) => !usedThisWeek.has(b.id) || b.id === currentMealId)
+      .map((b) => `${b.id}: ${b.name}`)
+      .join('\n  ');
+  } else if (mealType === 'drinks') {
+    currentMealId = Array.isArray(currentPlan[day]?.drinks) ? currentPlan[day].drinks[0] : currentPlan[day]?.drinks;
+    currentMeal = currentMealId ? (masterMeals.drinks || []).find((d) => d.id === currentMealId) : null;
+    available = (masterMeals.drinks || [])
+      .filter((d) => !usedThisWeek.has(d.id) || d.id === currentMealId)
+      .map((d) => `${d.id}: ${d.name}`)
+      .join('\n  ');
+  } else if (mealType === 'fruit') {
+    currentMealId = currentPlan[day]?.fruit?.[0];
+    currentMeal = currentMealId ? masterMeals.fruits.find((f) => f.id === currentMealId) : null;
+    available = masterMeals.fruits
+      .filter((f) => !usedThisWeek.has(f.id) || f.id === currentMealId)
+      .map((f) => `${f.id}: ${f.name}`)
+      .join('\n  ');
+  } else {
+    // lunch or dinner
+    currentMealId = currentPlan[day]?.[mealType];
+    currentMeal = currentMealId ? masterMeals.meals.find((m) => m.id === currentMealId) : null;
+    available = masterMeals.meals
+      .filter((m) => !usedThisWeek.has(m.id) || m.id === currentMealId)
+      .filter((m) => {
+        if (m.slot === 'dinner' && mealType !== 'dinner') return false;
+        return true;
+      })
+      .map((m) => `${m.id}: ${m.name} [${m.type}, ${m.base}]`)
+      .join('\n  ');
+  }
+
+  const idPrefix = mealType === 'breakfast' ? 'bf-XX' : mealType === 'drinks' ? 'drink-XX' : mealType === 'fruit' ? 'fruit-XX' : 'meal-XX';
 
   return `You are a meal planner for a 2-person North Indian household.
 
@@ -113,11 +148,11 @@ ${reason ? `Reason for swap: ${reason}` : ''}
 Available alternatives (not already used this week):
   ${available}
 
-Suggest exactly 5 alternative meals for ${day} ${mealType}. For each, give a brief reason why it's a good swap (variety, nutrition, base alternation, etc).
+Suggest up to 5 alternative ${mealType === 'breakfast' ? 'breakfast' : mealType === 'drinks' ? 'drink' : mealType === 'fruit' ? 'fruit' : 'meal'} options for ${day} ${mealType}. For each, give a brief reason why it's a good choice.
 
 Respond with ONLY a JSON array, no other text:
 [
-  { "mealId": "meal-XX", "name": "Meal Name", "reason": "brief reason" },
+  { "mealId": "${idPrefix}", "name": "Name", "reason": "brief reason" },
   ...
 ]`;
 }
@@ -131,22 +166,32 @@ export function buildGroceryOptimizePrompt(groceryList, plan) {
     )
     .join('\n\n');
 
-  return `You are a grocery shopping advisor for a 2-person North Indian household.
+  return `You are a grocery shopping advisor for a 2-person North Indian household planning meals for one week (Mon-Sat, 2 people).
 
 Here is the grocery list for the week:
 ${items}
 
-Review this list and provide:
-1. Bulk buy opportunities (items that are cheaper in larger quantities)
-2. Missing staples that a North Indian kitchen should always have
-3. Items that could be skipped this week (already likely in stock or not essential)
+Review this list and provide TWO things:
+
+1. "suggestions": General advice — bulk buy opportunities, missing staples, items to skip.
+
+2. "fixes": Correct any nonsensical quantities. Common sense rules:
+   - Mushroom should be in grams (typically 200g), NOT packets
+   - Fresh coriander/dhaniya should always be 1 bunch
+   - Cabbage should be 1 nos (whole), not 100
+   - Onions, tomatoes, potatoes: reasonable amounts in kg for 2 people
+   - Paneer: typically 200g-400g, not tiny amounts
+   - Spice powders: small amounts in grams (50-100g)
+   - If a quantity seems unreasonably high or low for 2 people for a week, fix it
 
 Respond with ONLY a JSON object, no other text:
 {
-  "suggestions": [
-    "suggestion 1",
-    "suggestion 2",
+  "suggestions": ["suggestion 1", "suggestion 2"],
+  "fixes": [
+    { "name": "item name", "qty": correctedQty, "unit": "correctedUnit" },
     ...
   ]
-}`;
+}
+
+If no fixes are needed, return an empty fixes array.`;
 }

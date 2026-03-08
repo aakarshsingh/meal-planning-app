@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const CATEGORY_ICONS = {
   vegetable: '\u{1F96C}',
@@ -41,10 +41,18 @@ function GroceryList({ plan, leftovers }) {
   const [copied, setCopied] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [removedItems, setRemovedItems] = useState(new Set());
+  const [editingItem, setEditingItem] = useState(null);
+  const [editQty, setEditQty] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const editRef = useRef(null);
 
+  // Generate grocery list and auto-optimize with AI
   useEffect(() => {
     if (!plan) return;
     setLoading(true);
+    setRemovedItems(new Set());
+
     fetch('/api/groceries/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -54,6 +62,41 @@ function GroceryList({ plan, leftovers }) {
       .then((data) => {
         setGroceryData(data);
         setLoading(false);
+
+        // Auto-optimize with AI
+        setAiLoading(true);
+        fetch('/api/ai/optimize-grocery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groceryList: data, plan }),
+        })
+          .then((r) => r.json())
+          .then((aiData) => {
+            setAiSuggestions(aiData.suggestions || []);
+            // Apply AI quantity fixes
+            if (aiData.fixes && aiData.fixes.length > 0) {
+              setGroceryData((prev) => {
+                if (!prev) return prev;
+                const updated = { ...prev, categories: prev.categories.map((cat) => ({
+                  ...cat,
+                  items: cat.items.map((item) => {
+                    const fix = aiData.fixes.find(
+                      (f) => f.name && f.name.toLowerCase() === item.name.toLowerCase()
+                    );
+                    if (fix) {
+                      return { ...item, qty: fix.qty, unit: fix.unit || item.unit };
+                    }
+                    return item;
+                  }),
+                }))};
+                return updated;
+              });
+            }
+            setAiLoading(false);
+          })
+          .catch(() => {
+            setAiLoading(false);
+          });
       })
       .catch(() => setLoading(false));
   }, [plan, leftovers]);
@@ -64,14 +107,20 @@ function GroceryList({ plan, leftovers }) {
     for (const cat of groceryData.categories) {
       const icon = CATEGORY_ICONS[cat.name] || '';
       const label = CATEGORY_LABELS[cat.name] || cat.name;
+      const visibleItems = cat.items.filter((item) => !removedItems.has(item.id || item.name));
+      if (visibleItems.length === 0) continue;
       lines.push(`${icon} ${label}:`);
-      for (const item of cat.items) {
+      for (const item of visibleItems) {
         const leftoverNote = item.leftover > 0 ? ` (${item.leftover} from leftovers)` : '';
         lines.push(`  ${item.name}: ${item.qty} ${item.unit}${leftoverNote}`);
       }
       lines.push('');
     }
-    lines.push(`Total items: ${groceryData.totalItems}`);
+    const total = groceryData.categories.reduce(
+      (sum, cat) => sum + cat.items.filter((i) => !removedItems.has(i.id || i.name)).length,
+      0
+    );
+    lines.push(`Total items: ${total}`);
     return lines.join('\n');
   }
 
@@ -82,23 +131,38 @@ function GroceryList({ plan, leftovers }) {
     });
   }
 
-  function handleOptimize() {
-    if (!groceryData) return;
-    setAiLoading(true);
-    fetch('/api/ai/optimize-grocery', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groceryList: groceryData, plan }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setAiSuggestions(data.suggestions || []);
-        setAiLoading(false);
-      })
-      .catch(() => {
-        setAiSuggestions(['Could not get AI suggestions. Try again later.']);
-        setAiLoading(false);
-      });
+  function handleRemoveItem(itemKey) {
+    setRemovedItems((prev) => new Set([...prev, itemKey]));
+  }
+
+  function startEdit(item) {
+    setEditingItem(item.id || item.name);
+    setEditQty(String(item.qty));
+    setEditUnit(item.unit);
+    setTimeout(() => editRef.current?.focus(), 50);
+  }
+
+  function saveEdit() {
+    if (!editingItem) return;
+    const qty = parseFloat(editQty);
+    if (isNaN(qty) || qty <= 0) return;
+
+    setGroceryData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        categories: prev.categories.map((cat) => ({
+          ...cat,
+          items: cat.items.map((item) => {
+            if ((item.id || item.name) === editingItem) {
+              return { ...item, qty, unit: editUnit };
+            }
+            return item;
+          }),
+        })),
+      };
+    });
+    setEditingItem(null);
   }
 
   if (!plan) return null;
@@ -116,23 +180,27 @@ function GroceryList({ plan, leftovers }) {
 
   if (!groceryData) return null;
 
+  const visibleTotal = groceryData.categories.reduce(
+    (sum, cat) => sum + cat.items.filter((i) => !removedItems.has(i.id || i.name)).length,
+    0
+  );
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-ink">
           Grocery List
           <span className="text-sm font-normal text-ink/50 ml-2">
-            ({groceryData.totalItems} items)
+            ({visibleTotal} items)
           </span>
         </h2>
-        <div className="flex gap-2">
-          <button
-            onClick={handleOptimize}
-            disabled={aiLoading}
-            className="text-xs px-2.5 py-1 rounded-md bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100 disabled:opacity-50 transition-colors"
-          >
-            {aiLoading ? 'Optimizing...' : 'Optimize with AI'}
-          </button>
+        <div className="flex gap-2 items-center">
+          {aiLoading && (
+            <span className="text-xs text-purple-400 flex items-center gap-1">
+              <span className="animate-spin w-3 h-3 border-2 border-purple-200 border-t-purple-500 rounded-full inline-block" />
+              Optimizing...
+            </span>
+          )}
           <button
             onClick={handleCopy}
             className={`text-xs px-2.5 py-1 rounded-md transition-all ${
@@ -150,7 +218,7 @@ function GroceryList({ plan, leftovers }) {
       {aiSuggestions && aiSuggestions.length > 0 && (
         <div className="mb-4 bg-purple-50 rounded-lg border border-purple-200 p-3">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-purple-700">AI Suggestions</h4>
+            <h4 className="text-xs font-semibold text-purple-700">AI Tips</h4>
             <button
               onClick={() => setAiSuggestions(null)}
               className="text-purple-400 hover:text-purple-600 text-sm"
@@ -173,6 +241,8 @@ function GroceryList({ plan, leftovers }) {
         {groceryData.categories.map((cat) => {
           const icon = CATEGORY_ICONS[cat.name] || '';
           const label = CATEGORY_LABELS[cat.name] || cat.name;
+          const visibleItems = cat.items.filter((item) => !removedItems.has(item.id || item.name));
+          if (visibleItems.length === 0) return null;
 
           return (
             <div key={cat.name}>
@@ -180,30 +250,90 @@ function GroceryList({ plan, leftovers }) {
                 {icon} {label}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                {cat.items.map((item) => {
+                {visibleItems.map((item) => {
+                  const itemKey = item.id || item.name;
                   const hasLeftover = item.leftover > 0;
+                  const isEditing = editingItem === itemKey;
+
+                  if (isEditing) {
+                    return (
+                      <div
+                        key={itemKey}
+                        className="flex items-center gap-1 px-2 py-1 rounded bg-primary-light border border-primary/20"
+                      >
+                        <span className="text-sm text-ink flex-1 truncate">{item.name}</span>
+                        <input
+                          ref={editRef}
+                          type="number"
+                          value={editQty}
+                          onChange={(e) => setEditQty(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && saveEdit()}
+                          className="w-16 px-1 py-0.5 text-xs rounded border border-ink/15 text-ink"
+                        />
+                        <select
+                          value={editUnit}
+                          onChange={(e) => setEditUnit(e.target.value)}
+                          className="px-1 py-0.5 text-xs rounded border border-ink/15 text-ink"
+                        >
+                          {Object.keys(UNIT_LABELS).map((u) => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={saveEdit}
+                          className="text-[10px] px-1.5 py-0.5 bg-primary text-white rounded"
+                        >
+                          OK
+                        </button>
+                        <button
+                          onClick={() => setEditingItem(null)}
+                          className="text-[10px] px-1 text-ink/40"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
-                      key={item.id || item.name}
-                      className={`flex items-center justify-between px-3 py-1.5 rounded text-sm ${
+                      key={itemKey}
+                      className={`flex items-center justify-between px-3 py-1.5 rounded text-sm group ${
                         hasLeftover && item.needed === 0
                           ? 'bg-gray-50 text-gray-400'
                           : 'bg-cream/50 text-ink'
                       }`}
                     >
-                      <span className={hasLeftover && item.needed === 0 ? 'line-through' : ''}>
+                      <span
+                        className={`cursor-pointer hover:text-primary ${hasLeftover && item.needed === 0 ? 'line-through' : ''}`}
+                        onClick={() => startEdit(item)}
+                        title="Click to edit"
+                      >
                         {item.name}
                       </span>
-                      <span className="text-xs text-ink/50 shrink-0 ml-2">
-                        {item.qty}{' '}
-                        <span title={UNIT_LABELS[item.unit] || item.unit} className="cursor-help border-b border-dotted border-ink/20">
-                          {item.unit}
+                      <span className="text-xs text-ink/50 shrink-0 ml-2 flex items-center gap-1">
+                        <span
+                          className="cursor-pointer hover:text-primary"
+                          onClick={() => startEdit(item)}
+                          title="Click to edit"
+                        >
+                          {item.qty}{' '}
+                          <span title={UNIT_LABELS[item.unit] || item.unit} className="cursor-help border-b border-dotted border-ink/20">
+                            {item.unit}
+                          </span>
                         </span>
                         {hasLeftover && (
-                          <span className="text-ink/40 ml-1 italic">
+                          <span className="text-ink/40 italic">
                             (-{item.leftover} leftover)
                           </span>
                         )}
+                        <button
+                          onClick={() => handleRemoveItem(itemKey)}
+                          className="text-ink/20 hover:text-accent ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Remove from list"
+                        >
+                          &times;
+                        </button>
                       </span>
                     </div>
                   );

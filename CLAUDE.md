@@ -1,140 +1,12 @@
 # CLAUDE.md
 
-## Build Milestones
-
-> **Instructions**: Work through these milestones in order. After completing each one, mark it done by changing `[ ]` to `[x]`. Run the verification steps before marking complete. Do NOT skip ahead.
-
-### Milestone 1: Project Scaffold + File Store
-- [x] Initialize Node.js project with Express backend and React frontend (Vite)
-- [x] Create `/server/index.js` — Express on port 3001
-- [x] Create `/server/utils/fileStore.js` — readJSON(filename), writeJSON(filename, data), appendToHistory(weekData)
-- [x] All file ops read/write from `/data` directory (seed files already exist — do NOT modify them)
-- [x] Set up Vite on port 3000 with proxy to 3001 for `/api/*`
-- [x] Install deps: express, cors, dotenv, concurrently, @anthropic-ai/sdk
-- [x] Install dev deps: vite, @vitejs/plugin-react, tailwindcss, postcss, autoprefixer
-- [x] Configure Tailwind CSS
-- [x] Create `.env.example` with ANTHROPIC_API_KEY placeholder
-- [x] package.json scripts: `dev` (concurrent), `server`, `client`
-- [x] Health check: `GET /api/health` → `{ status: "ok", meals: <count from master-meals.json> }`
-- [x] **Verify**: `npm run server` then `curl http://localhost:3001/api/health` returns `{"status":"ok","meals":22}`
-
-### Milestone 2: Backend API Routes — Meals & Planner
-- [x] `server/routes/meals.js` — `GET /api/meals` (all breakfasts, meals, fruits), `GET /api/meals/:id`, `POST /api/meals`, `GET /api/ingredients`
-- [x] `server/routes/planner.js` — `GET /api/planner/current`, `PUT /api/planner/current`, `PUT /api/planner/current/slot` (update single slot `{day, mealType, mealId}`), `POST /api/planner/finalize`, `GET /api/planner/history?weeks=N`
-- [x] Register routes in `server/index.js`
-- [x] Proper error handling on all routes
-- [x] **Verify**: `curl /api/meals | jq '.meals | length'` → 22
-- [x] **Verify**: `curl /api/ingredients | jq '.ingredients | length'` → 39
-- [x] **Verify**: `PUT /api/planner/current/slot` with `{"day":"Monday","mealType":"lunch","mealId":"meal-04"}` updates current-week.json
-
-### Milestone 3: Suggestion Engine (Rule-Based)
-- [x] `server/utils/suggestionEngine.js` — `generateWeeklyPlan(leftovers, preferences, history)` returns full week plan
-- [x] Breakfast: auto-rotate 9 options, no consecutive repeats, prefer leftover-using breakfasts
-- [x] Lunch/Dinner: exclude meals from last 2 weeks (history.json), score +3 leftover usage / +1 base alternation / -10 same week
-- [x] Enforce exactly 2 chicken meals per week (from config.json), rest veg/egg
-- [x] No same meal twice within a week
-- [x] Respect skipDays and skipMeals from preferences
-- [x] Fruit: rotate 6 options, 1-2 per day, no same fruit consecutive days
-- [x] `getSuggestions(day, mealType, currentPlan, history)` — returns 5 swap alternatives
-- [x] `server/routes/suggest.js` — `POST /api/suggest/plan`, `POST /api/suggest/swap`
-- [x] **Verify**: `POST /api/suggest/plan` with empty leftovers → 6 days filled, 2 chicken, no repeats
-
-### Milestone 4: Grocery Builder
-- [x] `server/utils/groceryBuilder.js` — `buildGroceryList(plan, leftovers)`
-- [x] Aggregate ingredients from all planned meals for the week
-- [x] Subtract leftover quantities
-- [x] Round up to purchase units (from ingredients.json purchaseUnit/purchaseQty)
-- [x] Always include milk, atta, oil, rice (config.json groceryDefaults.alwaysInclude)
-- [x] Skip alwaysInStock items unless plan needs significantly more
-- [x] Group by category: vegetable, dairy, protein, staple, bakery, ready-mix, fruit
-- [x] `server/routes/groceries.js` — `POST /api/groceries/generate`
-- [x] **Verify**: Generate plan → generate grocery list → items grouped by category, leftover quantities subtracted
-
-### Milestone 5: Claude AI Integration
-- [x] `server/utils/prompts.js` — prompt templates for plan generation, swap, grocery optimization
-- [x] `server/routes/ai.js`:
-  - [x] `POST /api/ai/generate-plan` — Claude generates full week plan as JSON, validate meal IDs exist
-  - [x] `POST /api/ai/swap-suggestions` — 5 alternatives with reasoning
-  - [x] `POST /api/ai/optimize-grocery` — bulk buy tips, missing staples, skip suggestions
-- [x] Fallback to rule-based engine if Claude API fails (no error shown to user)
-- [x] API key read from `.env`, never exposed to frontend
-- [x] **Verify**: With ANTHROPIC_API_KEY set, `POST /api/ai/generate-plan` returns valid plan
-
-### Milestone 6: Screen 1 — Leftover Input
-- [x] `src/App.jsx` — 3-step wizard with step indicator, Next/Back nav, global state for leftovers/preferences/plan/groceryList
-- [x] `src/components/LeftoverInput.jsx`:
-  - [x] Fetch ingredients from `GET /api/ingredients` on mount
-  - [x] Autocomplete search by ingredient name
-  - [x] Qty input + unit dropdown (pre-filled from ingredient data)
-  - [x] Add button → leftover chips grouped by category
-  - [x] Remove button on each chip
-  - [x] "No leftovers" shortcut button
-- [x] **Verify**: Type "pan" → autocomplete shows Paneer → add with qty → chip appears under Dairy → Next goes to Screen 2
-
-### Milestone 7: Screen 2 — Week Preferences
-- [x] `src/components/WeekPreferences.jsx`:
-  - [x] Mon–Sat toggle buttons to skip full days
-  - [x] Click skipped day → checkboxes to skip individual meals (breakfast/lunch/dinner)
-  - [x] Special requests: free text + Add → removable tags
-  - [x] Chicken count stepper (default 2)
-  - [x] Summary card: "Planning for X days, Y meals, Z chicken dishes, N leftovers"
-- [x] Back preserves Screen 1 state, Next goes to Screen 3
-- [x] **Verify**: Skip Saturday dinner → summary updates → Back → leftovers preserved → Next → Screen 3
-
-### Milestone 8: Screen 3 — Meal Grid with Drag & Drop
-- [x] Install @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
-- [x] `src/components/MealGrid.jsx`:
-  - [x] Grid: rows = [Breakfast, Lunch, Dinner, Fruit], columns = Mon–Sat
-  - [x] Each cell = Droppable, each MealCard = Draggable
-  - [x] Right sidebar: "Suggestions Tray" with draggable meal cards
-  - [x] On mount: call `POST /api/suggest/plan` → populate grid
-  - [x] Async: also call `POST /api/ai/generate-plan` → "Use AI suggestion" button if it returns
-  - [x] Drag between cells = swap, drag from tray = replace, drag to 🗑️ zone = remove
-  - [x] Skipped days greyed out, chicken meals warm accent
-- [x] `src/components/MealCard.jsx`:
-  - [x] Meal name, type icon (🥬/🥚/🍗), base label
-  - [x] × remove, 🔄 swap, +/- qty adjuster
-- [x] `src/components/SwapModal.jsx`:
-  - [x] Triggered by 🔄 button
-  - [x] Calls `POST /api/suggest/swap` + `POST /api/ai/swap-suggestions`
-  - [x] Shows combined list with name, type, AI reasoning
-  - [x] Click to replace
-- [x] **Verify**: Grid populates, drag lunch Mon→Tue swaps, 🔄 opens modal with suggestions, × removes meal
-
-### Milestone 9: Outputs — Weekly Chart & Grocery List
-- [x] `src/components/WeeklyChart.jsx`:
-  - [x] Formatted text matching PDF style (day headers, meal labels, quantities)
-  - [x] "Copy Day" per day, "Copy Full Week" button
-  - [x] navigator.clipboard.writeText + "Copied!" toast
-- [x] `src/components/GroceryList.jsx`:
-  - [x] Calls `POST /api/groceries/generate` when plan changes
-  - [x] Grouped by category with emoji headers (🥬🥛🍗🏪🍞📦🍎)
-  - [x] Leftover items shown struck-through with "(from leftovers)"
-  - [x] "Copy Grocery List" button
-  - [x] "Optimize with AI" button → shows Claude suggestions
-- [x] "Finalize Week" button: calls `POST /api/planner/finalize` → saves to history → resets to Screen 1
-- [x] **Verify**: Copy Full Week → paste in editor → correct format. Grocery list grouped. Finalize → history.json updated.
-
-### Milestone 10: Polish & Edge Cases
-- [x] Toast notifications (red errors, green success)
-- [x] Claude API failure → silent fallback to rule-based
-- [x] Loading spinners on API calls
-- [x] Empty states: "Drop a meal here" dashed cells, "All meals planned!" in tray
-- [x] Validation: block finalize if lunch/dinner slots empty, warn if chicken count off
-- [x] Responsive: horizontal scroll on mobile grid, full-width modal on mobile
-- [x] Keyboard: Escape closes modal, Enter triggers search
-- [x] Auto-save current-week.json on plan changes (debounced 2s)
-- [x] On load: if current-week.json has plan → "Resume?" or "Start fresh" prompt
-- [x] "Manage Meals" modal: view all master meals, add new meal → writes to master-meals.json
-- [x] **Verify**: Resume works after browser close. Finalize with empty slots warns. Mobile layout scrolls.
-
 ## Project Overview
 
 Weekly meal planner for a 2-person North Indian household. Local-first app with React frontend, Node.js/Express backend, local JSON file storage, and Claude AI for smart suggestions.
 
 ## Tech Stack
 
-- **Frontend**: React (Vite), @dnd-kit/core for drag-and-drop, Tailwind CSS
+- **Frontend**: React (Vite), Tailwind CSS
 - **Backend**: Node.js, Express (port 3001)
 - **Storage**: Local JSON files in `/data` directory — no database
 - **AI**: Claude API (Sonnet) via @anthropic-ai/sdk
@@ -145,7 +17,7 @@ Weekly meal planner for a 2-person North Indian household. Local-first app with 
 ```
 meal-planner/
 ├── data/                        # JSON storage (DO NOT delete seed data)
-│   ├── master-meals.json        # 9 breakfasts, 22 meals, 6 fruits with ingredient mappings
+│   ├── master-meals.json        # 9 breakfasts, 22 meals, 6 fruits, 3 drinks with ingredient mappings
 │   ├── ingredients.json         # 39 ingredients with categories, purchase units, shelf life
 │   ├── history.json             # 10 weeks of actual meal history (Oct 2025 – Mar 2026)
 │   ├── config.json              # Household rules, AI config, grocery defaults
@@ -153,28 +25,28 @@ meal-planner/
 ├── server/
 │   ├── index.js                 # Express server entry
 │   ├── routes/
-│   │   ├── meals.js             # GET/POST master meals and ingredients
+│   │   ├── meals.js             # GET/POST/PUT/DELETE master meals and ingredients
 │   │   ├── planner.js           # Current week CRUD, finalize to history
 │   │   ├── groceries.js         # Grocery list generation
 │   │   ├── suggest.js           # Rule-based suggestion engine routes
-│   │   └── ai.js                # Claude API proxy routes
+│   │   └── ai.js                # Claude API proxy routes (with noOp for all-skipped)
 │   └── utils/
 │       ├── fileStore.js         # readJSON, writeJSON, appendToHistory helpers
 │       ├── suggestionEngine.js  # Rule-based plan generation and swap suggestions
 │       ├── groceryBuilder.js    # Aggregate ingredients, subtract leftovers, group by category
-│       └── prompts.js           # Claude API prompt templates
+│       └── prompts.js           # Claude API prompt templates (type-specific swaps, grocery fixes)
 ├── src/
-│   ├── App.jsx                  # 3-step wizard with auto-save, resume, validation
+│   ├── App.jsx                  # 3-step wizard with clickable steps, auto-save, resume, validation
 │   └── components/
 │       ├── LeftoverInput.jsx    # Screen 1: pantry stock input, fraction qty support
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
-│       ├── MealGrid.jsx         # Screen 3: drag-and-drop weekly grid
-│       ├── MealCard.jsx         # Draggable meal tile with swap/remove/qty buttons
-│       ├── SwapModal.jsx        # Modal with rule-based + AI swap suggestions
-│       ├── GroceryList.jsx      # Categorized grocery output with copy button
+│       ├── MealGrid.jsx         # Screen 3: HTML table grid, click-to-add/swap via modal
+│       ├── MealCard.jsx         # Meal tile with base swap, qty adjust, swap/remove buttons
+│       ├── SwapModal.jsx        # 3-section modal: AI suggestions, rule-based, everything else
+│       ├── GroceryList.jsx      # Auto-AI-optimized grocery with edit/remove per item
 │       ├── WeeklyChart.jsx      # Copyable day-wise meal text
 │       ├── Toast.jsx            # Toast notification system (success/error/warning)
-│       └── ManageMealsModal.jsx # View all meals, add new meal to master list
+│       └── ManageMealsModal.jsx # CRUD meals with dedup check, categories, inline edit/delete
 ├── .env                         # ANTHROPIC_API_KEY=sk-ant-...
 ├── .env.example
 └── package.json
@@ -191,13 +63,14 @@ meal-planner/
 - **Servings**: All quantities are total for 2 people (not per person)
 - **Meal slots**: Breakfast (includes drinks), Lunch, Dinner, Fruit — 4 visual rows in the grid
 - **Plan days**: Monday through Saturday (6 days)
-- **Breakfast**: Auto-suggested from a rotation of 9 options, user can override via drag-and-drop
-- **Lunch/Dinner**: Flexible — same meal can go in either slot. 22 meals in master list
+- **Meal definition**: Each meal is just the dish name (e.g., "Palak Paneer") with a suggestive base (e.g., paratha) that can be changed per-cell
+- **Breakfast**: Auto-suggested from a rotation of 9 options, user can swap via modal
+- **Lunch/Dinner**: Flexible — same meal can go in either slot. 22+ meals in master list
 - **Chicken**: Target 2 dishes per week (configurable in config.json)
 - **No-repeat rule**: Don't repeat meals from the last 2 weeks (reads history.json)
 - **Within-week uniqueness**: No same meal twice in a single week
 - **Fruits**: Shown as a separate row in the meal grid, 1-2 per day, 6 fruits available
-- **Grocery calculation**: Dynamically calculated from planned meals, subtract leftovers, round up to purchase units, group by category
+- **Grocery calculation**: Dynamically calculated from planned meals, subtract leftovers, round up to purchase units, group by category, AI-fixed quantities
 
 ## Data File Formats
 
@@ -205,6 +78,7 @@ meal-planner/
 - `meta`: servings, cuisine, chickenPerWeek
 - `breakfasts[]`: id (bf-XX), name, defaultQty, unit, accompaniment, ingredients[]
 - `meals[]`: id (meal-XX), name, type (veg/egg/chicken), slot (flexible/dinner), base (rice/paratha/roti/pav/noodles), ingredients[]
+- `drinks[]`: id (drink-XX), name, ingredients[]
 - `fruits[]`: id (fruit-XX), name, defaultQty, unit, season
 - Each ingredient reference: `{ ingredientId, qty, unit }`
 
@@ -233,18 +107,14 @@ meal-planner/
 6. Fruit: rotate, no same fruit on consecutive days
 7. Fallback to Claude API if rule-based engine can't fill all slots
 
-## Claude API Usage — Max 3 Calls Per Session (2 fixed + 1 optional)
+## Claude API Usage
 
-API calls are budgeted to avoid spam and save costs:
+API calls are budgeted to save costs:
 
-1. **Plan generation** (Screen 3 load, fixed): Single call to `/api/ai/generate-plan`. Returns a full AI plan. Cached and used for:
-   - "Use AI Plan" banner to replace the rule-based plan
-   - Purple "AI Picks" in the suggestion tray (meals unique to AI plan)
-   - Cached AI suggestions shown in SwapModal (no extra API call)
-   - Subtle "AI suggestions unavailable" message on failure (no error toast)
-2. **Grocery optimization** (user-triggered, fixed): Manual "Optimize with AI" button on the grocery list calls `/api/ai/optimize-grocery`
-3. **Swap override** (user-triggered, max 1 per session): "Totally confused? Get a fresh suggestion from AI" button in SwapModal calls `/api/ai/swap-suggestions` once. Disabled after use for the rest of the session.
-4. **Swap modal default**: Rule-based suggestions + cached AI meals from call #1. No API call on open.
+1. **Plan generation** (Screen 3 load): Single call to `/api/ai/generate-plan`. AI plan merged into grid (at least 1 AI meal guaranteed). Cached for SwapModal AI suggestions. NoOp if all days are skipped.
+2. **Grocery optimization** (automatic on Review Plan): Auto-called when user clicks "Review Plan". Returns suggestions + quantity fixes (e.g., Mushroom 200g not pk, Coriander 1 bunch). No manual button needed.
+3. **Swap override** (user-triggered, max 1 per session): "Get fresh AI suggestions" button in SwapModal. Type-specific: breakfast slots get breakfast suggestions, lunch/dinner get meal suggestions.
+4. **SwapModal default**: Rule-based suggestions + cached AI meals from call #1 + "Everything else" full list. No API call on open.
 5. Always fall back to rule-based engine if API fails — never block the user
 
 ## UI Flow
@@ -253,30 +123,25 @@ API calls are budgeted to avoid spam and save costs:
 Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Grid) → Screen 3 Part 2 (Review + Finalize)
 ```
 
-- **Header**: Calendar dropdown week picker (click to open month view, select a Monday), auto-detects next week on Sat/Sun, "Manage Meals" button
-- **Screen 1**: Autocomplete ingredient search, text qty input with fraction support (1/2, 1 1/3), fraction quick-pick buttons for bunch/nos/pc units
-- **Screen 2**: Day rows with inline breakfast/lunch/dinner skip checkboxes, clickable quick prompt chips (8 preset requests), chicken count stepper, summary card
-- **Screen 3 Part 1** (Edit): Drag-and-drop meal grid with click-to-place alternative, Clear All / Restore buttons, suggestion tray sidebar (desktop) / below grid (mobile), "Review Plan" button
-- **Screen 3 Part 2** (Review): Weekly Chart + Grocery List + "Back to Edit" + "Finalize Week" button
-- **Grid rows**: Breakfast (combined breakfast items + drinks), Lunch, Dinner, Fruit — lunch/dinner interchangeable as main meals
-- **Click-to-place**: Click a tray chip → compatible empty cells highlight gold → click a cell to place. Escape to cancel.
-- **SwapModal**: Rule-based + cached AI suggestions, free text "Add & Use" new dish input, 1 fresh AI override button, drinks shown in morning row swap
-- **ManageMealsModal**: Inline editing (click item to edit name/type/base), add new items of any category (meal/breakfast/drink/fruit)
-- **WeeklyChart**: Copyable day-wise meal text (WhatsApp-friendly)
-- **GroceryList**: Categorized, copyable, "Optimize with AI" button
-- **Finalize**: Validates slots, saves to history, resets
+- **Header**: Calendar dropdown week picker, "Manage Meals" button
+- **Step indicators**: Clickable — can navigate back to Pantry Stock or Preferences from any later step
+- **Screen 1**: Autocomplete ingredient search, fraction qty support
+- **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, chicken count stepper
+- **Screen 3 Part 1** (Edit): HTML table grid (proper alignment), click empty slot → SwapModal, Clear All / Restore buttons, "Review Plan" button
+- **Screen 3 Part 2** (Review): Weekly Chart + AI-optimized Grocery List + "Back to Edit" (no API call) + "Finalize Week"
+- **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else (full filtered list). Search filter, "Add & Use" for new dishes.
+- **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Fruits), inline edit, delete with confirmation, duplicate prevention
+- **GroceryList**: Auto-optimized, per-item edit (click to change qty/unit) and remove (x button)
 
 ## Style Guide
 
 - Tailwind CSS with Helvetica font
-- Color palette: #EBEBD3 (cream/base), #00635D (teal/primary), #0C1B33 (navy/text), #F4D35E (gold/highlights), #DA4167 (red/accent for destructive actions)
-- Subtle use — cream base, white cards, teal buttons/links, gold for chicken highlights and selected states, red for remove/finalize
-- Meal type indicators: 🥚 egg, 🍗 chicken (no icon for veg — clean look)
-- Per-fruit emoji icons (🍎🥝🍇🍓🍌🍊 etc.)
-- Chicken meals get a subtle gold accent highlight in the grid
-- Skipped days are greyed out
-- Drag targets show dashed teal border, click-to-place targets pulse gold
-- Responsive: grid scrolls horizontally on mobile, suggestion tray moves below grid
+- Color palette: #EBEBD3 (cream/base), #00635D (teal/primary), #0C1B33 (navy/text), #F4D35E (gold/highlights), #DA4167 (red/accent)
+- Meal type indicators: 🥚 egg, 🍗 chicken (no icon for veg)
+- Per-fruit emoji icons, per-drink emoji icons
+- Chicken meals get gold accent highlight
+- Skipped days greyed out
+- Responsive: grid scrolls horizontally on mobile
 
 ## Important Constraints
 
@@ -285,3 +150,5 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - API key must never be exposed to the frontend — all Claude calls go through `/api/ai/*` routes
 - Auto-save current-week.json on every plan change (debounced 2s)
 - On app load, if current-week.json has existing plan, prompt "Resume?" or "Start fresh"
+- "Back to Edit" from Review must NOT trigger any API calls
+- All days/meals skipped → noOp, no API call

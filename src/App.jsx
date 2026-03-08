@@ -133,29 +133,37 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
   );
 }
 
-function StepIndicator({ currentStep }) {
+function StepIndicator({ currentStep, onStepClick }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
       {STEP_LABELS.map((label, i) => (
         <div key={label} className="flex items-center gap-2">
-          <div
+          <button
+            onClick={() => onStepClick(i)}
+            disabled={i > currentStep}
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
               i < currentStep
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-white cursor-pointer hover:bg-primary-dark'
                 : i === currentStep
                   ? 'bg-gold text-ink ring-2 ring-gold/50'
-                  : 'bg-ink/10 text-ink/40'
+                  : 'bg-ink/10 text-ink/40 cursor-not-allowed'
             }`}
           >
             {i < currentStep ? '\u2713' : i + 1}
-          </div>
-          <span
-            className={`text-sm hidden sm:inline ${
-              i === currentStep ? 'text-ink font-semibold' : 'text-ink/40'
+          </button>
+          <button
+            onClick={() => onStepClick(i)}
+            disabled={i > currentStep}
+            className={`text-sm hidden sm:inline transition-colors ${
+              i < currentStep
+                ? 'text-primary cursor-pointer hover:text-primary-dark'
+                : i === currentStep
+                  ? 'text-ink font-semibold'
+                  : 'text-ink/40 cursor-not-allowed'
             }`}
           >
             {label}
-          </span>
+          </button>
           {i < STEP_LABELS.length - 1 && (
             <div
               className={`w-8 h-0.5 ${i < currentStep ? 'bg-primary' : 'bg-ink/15'}`}
@@ -178,7 +186,6 @@ function App() {
   });
   const [plan, setPlan] = useState(null);
   const [planReady, setPlanReady] = useState(false);
-  const [groceryList, setGroceryList] = useState(null);
   const [masterMeals, setMasterMeals] = useState(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalized, setFinalized] = useState(false);
@@ -276,6 +283,21 @@ function App() {
     setResumePrompt(null);
   }
 
+  function handleStepClick(targetStep) {
+    // Can only go back, not forward past current
+    if (targetStep < step) {
+      if (step === 2 && planReady) {
+        // If in review mode, go back to edit first
+        setPlanReady(false);
+        if (targetStep < 2) {
+          setStep(targetStep);
+        }
+      } else {
+        setStep(targetStep);
+      }
+    }
+  }
+
   function validatePlan() {
     if (!plan) return { errors: ['No plan generated yet'], warnings: [] };
     const errors = [];
@@ -340,6 +362,7 @@ function App() {
   }
 
   function handleBackToEdit() {
+    // Just toggle view — no API call
     setPlanReady(false);
   }
 
@@ -395,7 +418,6 @@ function App() {
             specialRequests: [],
             chickenCount: 2,
           });
-          setGroceryList(null);
           setFinalized(false);
           setStep(0);
         }, 2000);
@@ -454,7 +476,7 @@ function App() {
           </div>
         )}
 
-        <StepIndicator currentStep={step} />
+        <StepIndicator currentStep={step} onStepClick={handleStepClick} />
 
         {step === 0 && (
           <LeftoverInput

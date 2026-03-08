@@ -1,6 +1,3 @@
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
 const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
 
 const FRUIT_ICONS = {
@@ -19,74 +16,34 @@ const FRUIT_ICONS = {
 
 const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles'];
 
-function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChange, compact }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: dragId });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
+function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
   if (!meal) return null;
 
   const isChicken = meal.type === 'chicken';
-  const isEgg = meal.type === 'egg';
   const isFruit = meal.type === 'fruit';
   const icon = isFruit
     ? (FRUIT_ICONS[meal.name] || '\u{1F34E}')
     : TYPE_ICONS[meal.type] || '';
 
-  if (compact) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        {...attributes}
-        {...listeners}
-        className={`px-2 py-1 rounded border text-xs cursor-grab active:cursor-grabbing truncate ${
-          isFruit
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : isChicken
-              ? 'bg-gold-light border-gold/30 text-ink'
-              : isEgg
-                ? 'bg-gold-light/50 border-gold/20 text-ink/80'
-                : 'bg-cream border-ink/15 text-ink'
-        }`}
-      >
-        {icon ? `${icon} ` : ''}{meal.name}
-      </div>
-    );
-  }
-
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={`rounded-lg border p-2 text-sm transition-shadow ${
         isChicken
           ? 'bg-gold-light border-gold/30 shadow-sm'
           : 'bg-white border-ink/10 shadow-sm'
       }`}
     >
-      {/* Drag handle area */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing flex items-start gap-1 mb-1"
-      >
+      <div className="flex items-start gap-1 mb-1">
         {icon && <span className="text-base leading-none">{icon}</span>}
         <span className="font-medium text-ink leading-tight text-xs line-clamp-2 flex-1">
-          {meal.name}{meal.base ? ` + ${meal.base.charAt(0).toUpperCase() + meal.base.slice(1)}` : ''}
+          {meal.name}
         </span>
       </div>
 
-      {/* Base swap buttons */}
       {meal.base && (
         <div className="flex items-center gap-1 mb-1">
           {onBaseChange ? (
-            <div className="flex gap-0.5">
+            <div className="flex gap-0.5 flex-wrap">
               {BASE_OPTIONS.map((b) => (
                 <button
                   key={b}
@@ -107,7 +64,6 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
         </div>
       )}
 
-      {/* Actions row */}
       <div className="flex items-center justify-between mt-1 pt-1 border-t border-ink/10">
         <div className="flex gap-1">
           {onSwap && (

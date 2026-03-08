@@ -26,6 +26,7 @@ function ManageMealsModal({ onClose, toastRef }) {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     fetch('/api/meals')
@@ -43,7 +44,9 @@ function ManageMealsModal({ onClose, toastRef }) {
   useEffect(() => {
     function handleKey(e) {
       if (e.key === 'Escape') {
-        if (editingId) {
+        if (deleteConfirm) {
+          setDeleteConfirm(null);
+        } else if (editingId) {
           setEditingId(null);
         } else {
           onClose();
@@ -52,7 +55,18 @@ function ManageMealsModal({ onClose, toastRef }) {
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose, editingId]);
+  }, [onClose, editingId, deleteConfirm]);
+
+  function getAllNames(excludeId) {
+    return [
+      ...(masterMeals?.breakfasts || []),
+      ...(masterMeals?.meals || []),
+      ...(masterMeals?.drinks || []),
+      ...(masterMeals?.fruits || []),
+    ]
+      .filter((m) => m.id !== excludeId)
+      .map((m) => m.name.toLowerCase().trim());
+  }
 
   function startEdit(item, category) {
     setEditingId(item.id);
@@ -67,39 +81,87 @@ function ManageMealsModal({ onClose, toastRef }) {
 
   function saveEdit() {
     if (!editingId || !editData.name?.trim()) return;
-    setSaving(true);
 
-    // Find and update the item in master meals
-    const updated = { ...masterMeals };
-    let targetArray;
-    if (editData.category === 'breakfast') targetArray = updated.breakfasts;
-    else if (editData.category === 'fruit') targetArray = updated.fruits;
-    else if (editData.category === 'drink') targetArray = updated.drinks;
-    else targetArray = updated.meals;
-
-    const idx = targetArray?.findIndex((m) => m.id === editingId);
-    if (idx >= 0) {
-      targetArray[idx] = {
-        ...targetArray[idx],
-        name: editData.name.trim(),
-        ...(editData.category === 'meal' && {
-          type: editData.type,
-          slot: editData.slot,
-          base: editData.base,
-        }),
-      };
+    // Duplicate check
+    if (getAllNames(editingId).includes(editData.name.trim().toLowerCase())) {
+      toastRef.current?.error('A dish with this name already exists');
+      return;
     }
 
-    // Save via full PUT (we don't have a PATCH endpoint, so just re-POST the whole thing)
-    // For now, update locally only since we don't have a full update endpoint
-    setMasterMeals(updated);
-    setEditingId(null);
-    setSaving(false);
-    toastRef.current?.success('Updated successfully');
+    setSaving(true);
+
+    const updates = { name: editData.name.trim() };
+    if (editData.category === 'meal') {
+      updates.type = editData.type;
+      updates.slot = editData.slot;
+      updates.base = editData.base;
+    }
+
+    fetch(`/api/meals/${editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed');
+        return r.json();
+      })
+      .then(() => {
+        // Update local state
+        const updated = { ...masterMeals };
+        let targetArray;
+        if (editData.category === 'breakfast') targetArray = updated.breakfasts;
+        else if (editData.category === 'fruit') targetArray = updated.fruits;
+        else if (editData.category === 'drink') targetArray = updated.drinks;
+        else targetArray = updated.meals;
+
+        const idx = targetArray?.findIndex((m) => m.id === editingId);
+        if (idx >= 0) {
+          targetArray[idx] = { ...targetArray[idx], ...updates };
+        }
+        setMasterMeals(updated);
+        setEditingId(null);
+        setSaving(false);
+        toastRef.current?.success('Updated successfully');
+      })
+      .catch(() => {
+        setSaving(false);
+        toastRef.current?.error('Failed to update');
+      });
+  }
+
+  function handleDelete(itemId) {
+    fetch(`/api/meals/${itemId}`, { method: 'DELETE' })
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed');
+        return r.json();
+      })
+      .then(() => {
+        setMasterMeals((prev) => ({
+          ...prev,
+          breakfasts: (prev.breakfasts || []).filter((m) => m.id !== itemId),
+          meals: (prev.meals || []).filter((m) => m.id !== itemId),
+          drinks: (prev.drinks || []).filter((m) => m.id !== itemId),
+          fruits: (prev.fruits || []).filter((m) => m.id !== itemId),
+        }));
+        setDeleteConfirm(null);
+        toastRef.current?.success('Removed');
+      })
+      .catch(() => {
+        setDeleteConfirm(null);
+        toastRef.current?.error('Failed to remove');
+      });
   }
 
   function handleAdd() {
     if (!newMeal.name.trim()) return;
+
+    // Duplicate check
+    if (getAllNames().includes(newMeal.name.trim().toLowerCase())) {
+      toastRef.current?.error(`"${newMeal.name.trim()}" already exists`);
+      return;
+    }
+
     setSaving(true);
 
     let meal;
@@ -130,6 +192,9 @@ function ManageMealsModal({ onClose, toastRef }) {
       body: JSON.stringify(meal),
     })
       .then((r) => {
+        if (r.status === 409) {
+          throw new Error('duplicate');
+        }
         if (!r.ok) throw new Error('Failed');
         return r.json();
       })
@@ -147,9 +212,13 @@ function ManageMealsModal({ onClose, toastRef }) {
         setSaving(false);
         toastRef.current?.success(`Added "${meal.name}"`);
       })
-      .catch(() => {
+      .catch((err) => {
         setSaving(false);
-        toastRef.current?.error('Failed to add');
+        if (err.message === 'duplicate') {
+          toastRef.current?.error(`"${meal.name}" already exists`);
+        } else {
+          toastRef.current?.error('Failed to add');
+        }
       });
   }
 
@@ -203,13 +272,24 @@ function ManageMealsModal({ onClose, toastRef }) {
     return (
       <div
         key={item.id}
-        onClick={() => startEdit(item, category)}
-        className="text-xs px-2 py-1.5 rounded bg-cream border border-ink/10 text-ink flex items-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-light/50 transition-colors group"
+        className="text-xs px-2 py-1.5 rounded bg-cream border border-ink/10 text-ink flex items-center gap-1 group hover:border-ink/20 transition-colors"
       >
         {icon && <span>{icon}</span>}
-        <span className="truncate flex-1">{item.name}</span>
-        {isMeal && item.base && <span className="text-[10px] text-ink/40 ml-auto capitalize shrink-0">{item.base}</span>}
-        <span className="text-[10px] text-ink/30 opacity-0 group-hover:opacity-100 ml-1">edit</span>
+        <span
+          className="truncate flex-1 cursor-pointer hover:text-primary"
+          onClick={() => startEdit(item, category)}
+          title="Click to edit"
+        >
+          {item.name}
+        </span>
+        {isMeal && item.base && <span className="text-[10px] text-ink/40 capitalize shrink-0">{item.base}</span>}
+        <button
+          onClick={() => setDeleteConfirm(item.id)}
+          className="text-ink/20 hover:text-accent ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          title="Delete"
+        >
+          &times;
+        </button>
       </div>
     );
   }
@@ -253,9 +333,9 @@ function ManageMealsModal({ onClose, toastRef }) {
                 {(masterMeals?.drinks || []).map((d) => renderItem(d, 'drink'))}
               </div>
 
-              {/* Meals */}
+              {/* Meals (Mains) */}
               <h4 className="text-xs font-semibold text-primary uppercase mb-2">
-                Meals ({masterMeals?.meals?.length || 0})
+                Mains ({masterMeals?.meals?.length || 0})
               </h4>
               <div className="grid grid-cols-2 gap-1 mb-4">
                 {masterMeals?.meals?.map((m) => renderItem(m, 'meal'))}
@@ -274,10 +354,9 @@ function ManageMealsModal({ onClose, toastRef }) {
                 <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary-light/50">
                   <h4 className="text-sm font-semibold text-ink">Add New Item</h4>
 
-                  {/* Category selector */}
                   <div className="flex gap-1">
                     {[
-                      { value: 'meal', label: 'Meal' },
+                      { value: 'meal', label: 'Main' },
                       { value: 'breakfast', label: 'Breakfast' },
                       { value: 'drink', label: 'Drink' },
                       { value: 'fruit', label: 'Fruit' },
@@ -365,6 +444,29 @@ function ManageMealsModal({ onClose, toastRef }) {
             </>
           )}
         </div>
+
+        {/* Delete confirmation */}
+        {deleteConfirm && (
+          <div className="absolute inset-0 bg-black/20 flex items-center justify-center rounded-xl">
+            <div className="bg-white rounded-lg shadow-xl p-4 mx-4 max-w-xs">
+              <p className="text-sm text-ink mb-3">Remove this item permanently?</p>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-3 py-1.5 text-sm text-ink/60 hover:bg-cream rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent/90"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

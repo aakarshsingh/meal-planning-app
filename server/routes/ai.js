@@ -21,11 +21,9 @@ function getClient() {
 }
 
 function extractJSON(text) {
-  // Try parsing directly first
   try {
     return JSON.parse(text);
   } catch {
-    // Extract JSON from markdown code blocks or surrounding text
     const match = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\{[\s\S]*\})/) || text.match(/(\[[\s\S]*\])/);
     if (match) {
       return JSON.parse(match[1].trim());
@@ -60,10 +58,32 @@ function validatePlan(plan, masterMeals) {
   return plan;
 }
 
+// Check if all days/meals are skipped — return noOp
+function isAllSkipped(preferences) {
+  const { skipDays = [], skipMeals = [] } = preferences || {};
+  const activeDays = DAYS.filter((d) => !skipDays.includes(d));
+  if (activeDays.length === 0) return true;
+  // Check if every active day has all 3 meals skipped
+  return activeDays.every((day) => {
+    const skippedMeals = skipMeals.filter((s) => s.day === day);
+    return skippedMeals.length >= 3;
+  });
+}
+
 // POST /api/ai/generate-plan
 router.post('/generate-plan', async (req, res) => {
   try {
     const { leftovers, preferences } = req.body;
+
+    // NoOp if everything is skipped
+    if (isAllSkipped(preferences)) {
+      const emptyPlan = {};
+      for (const day of DAYS) {
+        emptyPlan[day] = { breakfast: null, lunch: null, dinner: null, fruit: [] };
+      }
+      return res.json({ plan: emptyPlan, source: 'noOp' });
+    }
+
     const masterMeals = await readJSON('master-meals.json');
     const history = await readJSON('history.json');
 
@@ -83,7 +103,6 @@ router.post('/generate-plan', async (req, res) => {
       plan = extractJSON(text);
       plan = validatePlan(plan, masterMeals);
     } catch (aiErr) {
-      // Fallback to rule-based engine
       console.error('AI plan generation failed, falling back to rule-based:', aiErr.message);
       plan = await generateWeeklyPlan(leftovers, preferences, history);
       source = 'rule-based';
@@ -116,8 +135,18 @@ router.post('/swap-suggestions', async (req, res) => {
     const text = response.content[0].text;
     let suggestions = extractJSON(text);
 
-    // Validate meal IDs exist
-    const validIds = new Set(masterMeals.meals.map((m) => m.id));
+    // Validate meal IDs exist based on type
+    let validIds;
+    if (mealType === 'breakfast') {
+      validIds = new Set(masterMeals.breakfasts.map((b) => b.id));
+    } else if (mealType === 'drinks') {
+      validIds = new Set((masterMeals.drinks || []).map((d) => d.id));
+    } else if (mealType === 'fruit') {
+      validIds = new Set(masterMeals.fruits.map((f) => f.id));
+    } else {
+      validIds = new Set(masterMeals.meals.map((m) => m.id));
+    }
+
     suggestions = suggestions
       .filter((s) => validIds.has(s.mealId))
       .slice(0, 5);
@@ -150,6 +179,7 @@ router.post('/optimize-grocery', async (req, res) => {
 
     res.json({
       suggestions: result.suggestions || [],
+      fixes: result.fixes || [],
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
