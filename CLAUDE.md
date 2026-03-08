@@ -233,17 +233,19 @@ meal-planner/
 6. Fruit: rotate, no same fruit on consecutive days
 7. Fallback to Claude API if rule-based engine can't fill all slots
 
-## Claude API Usage — Max 2 Calls Per Session
+## Claude API Usage — Max 3 Calls Per Session (2 fixed + 1 optional)
 
 API calls are budgeted to avoid spam and save costs:
 
-1. **Plan generation** (Screen 3 load): Single call to `/api/ai/generate-plan`. Returns a full AI plan used for:
+1. **Plan generation** (Screen 3 load, fixed): Single call to `/api/ai/generate-plan`. Returns a full AI plan. Cached and used for:
    - "Use AI Plan" banner to replace the rule-based plan
-   - AI-only meal IDs shown as purple "AI Picks" in the suggestion tray
-   - If the call fails, a subtle "AI suggestions unavailable" message appears (no error toast)
-2. **Grocery optimization** (user-triggered): Manual "Optimize with AI" button on the grocery list calls `/api/ai/optimize-grocery`
-3. **Swap modal**: Rule-based suggestions only — NO AI call per swap
-4. Always fall back to rule-based engine if API fails — never block the user
+   - Purple "AI Picks" in the suggestion tray (meals unique to AI plan)
+   - Cached AI suggestions shown in SwapModal (no extra API call)
+   - Subtle "AI suggestions unavailable" message on failure (no error toast)
+2. **Grocery optimization** (user-triggered, fixed): Manual "Optimize with AI" button on the grocery list calls `/api/ai/optimize-grocery`
+3. **Swap override** (user-triggered, max 1 per session): "Totally confused? Get a fresh suggestion from AI" button in SwapModal calls `/api/ai/swap-suggestions` once. Disabled after use for the rest of the session.
+4. **Swap modal default**: Rule-based suggestions + cached AI meals from call #1. No API call on open.
+5. Always fall back to rule-based engine if API fails — never block the user
 
 ## UI Flow
 

@@ -19,7 +19,7 @@
 - **Breakfast auto-rotation** with manual override
 - **Fruit row** in the grid (separate from meals)
 - **Smart suggestions** — No repeats within the week, avoids last 2 weeks' history, uses leftovers first
-- **Claude AI integration** — Plan generation + AI picks in tray (1 call), grocery optimization (1 call). Max 2 API calls per session. Subtle failure handling
+- **Claude AI integration** — Max 3 API calls per session: plan generation on load (fuels AI Picks tray + SwapModal), grocery optimization (manual), and 1 optional fresh AI swap override. Subtle failure handling
 - **Grocery list builder** — Calculates quantities from planned meals, subtracts leftovers, groups by category
 - **Copyable outputs** — Day-wise meal chart + grocery list as WhatsApp-friendly text
 - **History tracking** — Saves finalized weeks, learns over time
@@ -121,7 +121,7 @@ Priority layers:
 3. History — avoid last 2 weeks' meals
 4. Variety — mix rice/paratha/roti bases across the week
 5. Chicken — target 2 chicken dishes per week
-6. AI layer — Single Claude API call on Screen 3 load for alternative plan + "AI Picks" in tray
+6. AI layer — 1 call on load (cached for tray + swap), 1 optional fresh swap override, 1 grocery optimize
 ```
 
 ## Setup

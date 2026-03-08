@@ -2,14 +2,27 @@ import { useState, useEffect } from 'react';
 
 const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
 
-function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose, toastRef }) {
+function SwapModal({
+  day,
+  mealType,
+  currentPlan,
+  masterMeals,
+  cachedAiMeals,
+  aiOverrideUsed,
+  onAiOverrideUsed,
+  onSelect,
+  onClose,
+  toastRef,
+}) {
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
+  const [freshAiLoading, setFreshAiLoading] = useState(false);
   const [newDishName, setNewDishName] = useState('');
   const [addingSaving, setAddingSaving] = useState(false);
 
+  // Rule-based suggestions (instant)
   useEffect(() => {
-    // Rule-based suggestions only — no AI call (saved for plan generation)
     fetch('/api/suggest/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -31,10 +44,60 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  const allSuggestions = suggestions.map((s) => ({
-    ...s,
-    mealId: s.id || s.mealId,
-  }));
+  // Build used meal IDs from current plan (to filter out already-planned meals)
+  const usedMealIds = new Set();
+  if (currentPlan) {
+    for (const d of Object.values(currentPlan)) {
+      if (!d) continue;
+      if (d.breakfast) usedMealIds.add(d.breakfast);
+      if (d.lunch) usedMealIds.add(d.lunch);
+      if (d.dinner) usedMealIds.add(d.dinner);
+    }
+  }
+
+  // Merge rule-based suggestions
+  const seenIds = new Set();
+  const ruleSuggestions = [];
+  for (const s of suggestions) {
+    const id = s.id || s.mealId;
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      ruleSuggestions.push({ ...s, mealId: id });
+    }
+  }
+
+  // Cached AI suggestions: meals from the AI plan not in rule suggestions and not currently used
+  const aiCachedSuggestions = (cachedAiMeals || [])
+    .filter((m) => !seenIds.has(m.id) && !usedMealIds.has(m.id))
+    .map((m) => ({ ...m, mealId: m.id, source: 'ai-cached' }));
+
+  // Fresh AI override suggestions (from the 1 allowed call)
+  const freshSuggestions = freshAiSuggestions
+    .filter((s) => {
+      const id = s.id || s.mealId;
+      return !seenIds.has(id) && !aiCachedSuggestions.some((a) => a.mealId === id);
+    })
+    .map((s) => ({ ...s, mealId: s.id || s.mealId, source: 'ai-fresh' }));
+
+  function handleFreshAiCall() {
+    setFreshAiLoading(true);
+    fetch('/api/ai/swap-suggestions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ day, mealType, currentPlan }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setFreshAiSuggestions(data.suggestions || []);
+        setFreshAiLoading(false);
+        onAiOverrideUsed(); // Mark override as used for the session
+      })
+      .catch(() => {
+        setFreshAiLoading(false);
+        onAiOverrideUsed();
+        toastRef?.current?.error('AI suggestion failed');
+      });
+  }
 
   function handleAddNewDish() {
     const name = newDishName.trim();
@@ -97,30 +160,90 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
             </div>
           )}
 
-          {!loading && allSuggestions.length === 0 && (
-            <p className="text-sm text-amber-400 text-center py-4">No suggestions available</p>
-          )}
-
-          {allSuggestions.map((s) => (
+          {/* Rule-based suggestions */}
+          {ruleSuggestions.map((s) => (
             <button
               key={s.mealId}
               onClick={() => onSelect(s.mealId)}
-              className="w-full text-left p-3 rounded-lg border border-amber-100 hover:border-amber-300 hover:bg-amber-50 transition-colors group"
+              className="w-full text-left p-3 rounded-lg border border-amber-100 hover:border-amber-300 hover:bg-amber-50 transition-colors"
             >
               <div className="flex items-center gap-2">
-                {TYPE_ICONS[s.type] && (
-                  <span className="text-base">{TYPE_ICONS[s.type]}</span>
-                )}
+                {TYPE_ICONS[s.type] && <span className="text-base">{TYPE_ICONS[s.type]}</span>}
                 <span className="font-medium text-sm text-amber-900 flex-1">{s.name}</span>
-                {s.base && (
-                  <span className="text-[10px] text-amber-400 capitalize">{s.base}</span>
-                )}
+                {s.base && <span className="text-[10px] text-amber-400 capitalize">{s.base}</span>}
               </div>
-              {s.reason && (
-                <p className="text-xs text-amber-500 mt-1 ml-7">{s.reason}</p>
-              )}
+              {s.reason && <p className="text-xs text-amber-500 mt-1 ml-7">{s.reason}</p>}
             </button>
           ))}
+
+          {/* Cached AI suggestions (from mount call — no extra API cost) */}
+          {aiCachedSuggestions.length > 0 && (
+            <>
+              <div className="pt-2 pb-1">
+                <span className="text-[10px] text-purple-500 uppercase font-medium">AI Picks</span>
+              </div>
+              {aiCachedSuggestions.map((s) => (
+                <button
+                  key={s.mealId}
+                  onClick={() => onSelect(s.mealId)}
+                  className="w-full text-left p-3 rounded-lg border border-purple-100 hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {TYPE_ICONS[s.type] && <span className="text-base">{TYPE_ICONS[s.type]}</span>}
+                    <span className="font-medium text-sm text-purple-900 flex-1">{s.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-600 font-medium">AI</span>
+                    {s.base && <span className="text-[10px] text-purple-400 capitalize">{s.base}</span>}
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+
+          {/* Fresh AI override suggestions */}
+          {freshSuggestions.length > 0 && (
+            <>
+              <div className="pt-2 pb-1">
+                <span className="text-[10px] text-purple-500 uppercase font-medium">Fresh AI Suggestions</span>
+              </div>
+              {freshSuggestions.map((s) => (
+                <button
+                  key={s.mealId}
+                  onClick={() => onSelect(s.mealId)}
+                  className="w-full text-left p-3 rounded-lg border border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {TYPE_ICONS[s.type] && <span className="text-base">{TYPE_ICONS[s.type]}</span>}
+                    <span className="font-medium text-sm text-purple-900 flex-1">{s.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-200 text-purple-700 font-medium">Fresh</span>
+                    {s.base && <span className="text-[10px] text-purple-400 capitalize">{s.base}</span>}
+                  </div>
+                  {s.reason && <p className="text-xs text-purple-500 mt-1 ml-7">{s.reason}</p>}
+                </button>
+              ))}
+            </>
+          )}
+
+          {!loading && ruleSuggestions.length === 0 && aiCachedSuggestions.length === 0 && freshSuggestions.length === 0 && (
+            <p className="text-sm text-amber-400 text-center py-4">No suggestions available</p>
+          )}
+
+          {/* Override: fresh AI call (max 1 per session) */}
+          {!aiOverrideUsed && freshSuggestions.length === 0 && !freshAiLoading && (
+            <div className="pt-3 border-t border-gray-100 mt-2">
+              <button
+                onClick={handleFreshAiCall}
+                className="w-full text-center py-2.5 rounded-lg border border-dashed border-purple-300 text-purple-500 text-xs hover:bg-purple-50 hover:border-purple-400 transition-colors"
+              >
+                Totally confused? Get a fresh suggestion from AI
+              </button>
+            </div>
+          )}
+          {freshAiLoading && (
+            <div className="flex items-center gap-2 text-xs text-purple-400 py-3 justify-center">
+              <div className="animate-spin w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full" />
+              AI is thinking...
+            </div>
+          )}
         </div>
 
         {/* Add new dish inline */}

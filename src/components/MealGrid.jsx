@@ -94,6 +94,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   const [aiPlan, setAiPlan] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFailed, setAiFailed] = useState(false);
+  const [aiOverrideUsed, setAiOverrideUsed] = useState(false); // max 1 fresh AI call in SwapModal
   const [activeDragId, setActiveDragId] = useState(null);
   const [swapTarget, setSwapTarget] = useState(null);
   const [quantities, setQuantities] = useState({});
@@ -397,6 +398,21 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       .slice(0, 5); // Show max 5 AI suggestions
   }, [aiPlan, plan, masterMeals, usedMealIds, findMeal]);
 
+  // All meals the AI suggested (cached from mount call), for SwapModal
+  const cachedAiMeals = useMemo(() => {
+    if (!aiPlan || !masterMeals) return [];
+    const aiMealIds = new Set();
+    for (const day of DAYS) {
+      if (!aiPlan[day]) continue;
+      for (const slot of ['breakfast', 'lunch', 'dinner']) {
+        if (aiPlan[day][slot]) aiMealIds.add(aiPlan[day][slot]);
+      }
+    }
+    return [...aiMealIds]
+      .map((id) => findMeal(id))
+      .filter(Boolean);
+  }, [aiPlan, masterMeals, findMeal]);
+
   // Active drag overlay
   const activeDragSource = parseDragId(activeDragId);
   let activeDragMeal = null;
@@ -693,13 +709,16 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         ) : null}
       </DragOverlay>
 
-      {/* Swap modal — rule-based only, no AI call */}
+      {/* Swap modal — cached AI + rule-based, with 1 override */}
       {swapTarget && (
         <SwapModal
           day={swapTarget.day}
           mealType={swapTarget.mealType}
           currentPlan={plan}
           masterMeals={masterMeals}
+          cachedAiMeals={cachedAiMeals}
+          aiOverrideUsed={aiOverrideUsed}
+          onAiOverrideUsed={() => setAiOverrideUsed(true)}
           onSelect={handleSwapSelect}
           onClose={() => setSwapTarget(null)}
           toastRef={toastRef}
