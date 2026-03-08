@@ -23,7 +23,7 @@ const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 // Breakfasts that should show qty +/- buttons
 const COUNTABLE_BREAKFASTS = ['bread', 'aloo paratha', 'chilla', 'french toast', 'toast'];
 
-function isCountable(meal) {
+export function isCountable(meal) {
   // Lunch/dinner: countable only if base is roti/paratha/pav
   if (meal.base && COUNTABLE_BASES.includes(meal.base)) return true;
   // Breakfasts: specific items are countable

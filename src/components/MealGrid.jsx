@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import MealCard from './MealCard';
+import MealCard, { isCountable } from './MealCard';
 import SwapModal from './SwapModal';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -434,6 +434,8 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
                 const category = getMealCategory(itemId);
                 const isDrink = category === 'drinks';
                 const isFruit = category === 'fruit';
+                const isBreakfast = category === 'breakfast';
+                const countable = isBreakfast && isCountable(item);
                 const icon = isFruit
                   ? (FRUIT_ICONS[item.name] || '')
                   : isDrink
@@ -448,15 +450,36 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
                 return (
                   <div
                     key={itemId}
-                    className={`flex items-center justify-between px-1.5 py-1 rounded border text-xs ${colorClass}`}
+                    className={`px-1.5 py-1 rounded border text-xs ${colorClass}`}
                   >
-                    <span className="truncate">{icon ? `${icon} ` : ''}{item.name}</span>
-                    <button
-                      onClick={() => handleRemoveItem(day, mealType, itemId)}
-                      className="text-ink/30 hover:text-accent ml-1 shrink-0"
-                    >
-                      &times;
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <span className="truncate">{icon ? `${icon} ` : ''}{item.name}</span>
+                      <button
+                        onClick={() => handleRemoveItem(day, mealType, itemId)}
+                        className="text-ink/30 hover:text-accent ml-1 shrink-0"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                    {countable && (
+                      <div className="flex items-center gap-0.5 mt-0.5 justify-end">
+                        <button
+                          onClick={() => handleQtyChange(itemId, -1)}
+                          className="w-4 h-4 rounded text-[9px] border border-ink/15 hover:bg-primary-light text-ink/60"
+                        >
+                          -
+                        </button>
+                        <span className="text-[9px] text-ink/60 w-3 text-center font-medium">
+                          {quantities[itemId] || item.defaultQty || 2}
+                        </span>
+                        <button
+                          onClick={() => handleQtyChange(itemId, 1)}
+                          className="w-4 h-4 rounded text-[9px] border border-ink/15 hover:bg-primary-light text-ink/60"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
