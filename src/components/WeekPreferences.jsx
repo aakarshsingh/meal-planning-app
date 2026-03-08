@@ -44,7 +44,6 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
         skipMeals: p.skipMeals.filter((s) => !(s.day === day && s.mealType === mealType)),
       }));
     } else {
-      // If skipping all 3 meals for a day, skip the whole day instead
       const otherSkips = skipMeals.filter((s) => s.day === day);
       if (otherSkips.length === 2) {
         setPreferences((p) => ({
@@ -82,7 +81,6 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
     setPreferences((p) => ({ ...p, chickenCount: Math.max(0, Math.min(6, val)) }));
   }
 
-  // Summary calculations
   const activeDays = DAYS.filter((d) => !skipDays.includes(d));
   const totalMealSlots = activeDays.reduce((sum, day) => {
     const skippedForDay = skipMeals.filter((s) => s.day === day).length;
@@ -92,11 +90,11 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
   return (
     <div className="space-y-6">
       {/* Day & meal planning */}
-      <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
-        <h2 className="text-lg font-semibold text-amber-800 mb-1">
+      <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
+        <h2 className="text-lg font-semibold text-ink mb-1">
           Plan your week
         </h2>
-        <p className="text-sm text-amber-500 mb-4">
+        <p className="text-sm text-ink/50 mb-4">
           Toggle days off or skip individual meals. Tap a day button to skip the entire day.
         </p>
 
@@ -108,17 +106,16 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
               <div
                 key={day}
                 className={`rounded-lg p-3 transition-colors ${
-                  isFullySkipped ? 'bg-gray-50' : 'bg-amber-50/50'
+                  isFullySkipped ? 'bg-gray-50' : 'bg-cream/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {/* Day toggle */}
                   <button
                     onClick={() => toggleDay(day)}
                     className={`w-14 py-1.5 rounded-md font-medium text-sm transition-all shrink-0 ${
                       isFullySkipped
                         ? 'bg-gray-200 text-gray-400'
-                        : 'bg-amber-500 text-white hover:bg-amber-600'
+                        : 'bg-primary text-white hover:bg-primary-dark'
                     }`}
                   >
                     {DAY_SHORT[day]}
@@ -127,7 +124,6 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
                   {isFullySkipped ? (
                     <span className="text-xs text-gray-400 italic">Entire day skipped</span>
                   ) : (
-                    /* Per-meal toggles */
                     <div className="flex gap-3 flex-1">
                       {MEAL_TYPES.map((mt) => {
                         const isSkipped = skipMeals.some(
@@ -142,11 +138,11 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
                               type="checkbox"
                               checked={!isSkipped}
                               onChange={() => toggleMealSkip(day, mt)}
-                              className="rounded border-amber-300 text-amber-500 focus:ring-amber-400"
+                              className="rounded border-ink/20 text-primary focus:ring-primary"
                             />
                             <span
                               className={`text-xs capitalize ${
-                                isSkipped ? 'text-gray-400 line-through' : 'text-amber-700'
+                                isSkipped ? 'text-gray-400 line-through' : 'text-ink/70'
                               }`}
                             >
                               {mt}
@@ -164,21 +160,20 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
       </div>
 
       {/* Special requests */}
-      <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
-        <h2 className="text-lg font-semibold text-amber-800 mb-1">
+      <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
+        <h2 className="text-lg font-semibold text-ink mb-1">
           Special requests
         </h2>
-        <p className="text-sm text-amber-500 mb-3">
+        <p className="text-sm text-ink/50 mb-3">
           Any preferences for this week's meals?
         </p>
 
-        {/* Quick request chips */}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {QUICK_REQUESTS.filter((q) => !specialRequests.includes(q)).map((q) => (
             <button
               key={q}
               onClick={() => addRequest(q)}
-              className="text-xs px-2.5 py-1 rounded-full border border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300 transition-colors"
+              className="text-xs px-2.5 py-1 rounded-full border border-ink/15 text-ink/60 hover:bg-primary-light hover:border-primary/30 hover:text-primary transition-colors"
             >
               + {q}
             </button>
@@ -192,12 +187,12 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
             onChange={(e) => setRequestText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRequest()}
             placeholder="Or type your own..."
-            className="flex-1 px-3 py-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-amber-900 placeholder-amber-300 text-sm"
+            className="flex-1 px-3 py-2 rounded-lg border border-ink/15 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-ink placeholder-ink/30 text-sm"
           />
           <button
             onClick={() => addRequest()}
             disabled={!requestText.trim()}
-            className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+            className="px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
           >
             Add
           </button>
@@ -208,12 +203,12 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
             {specialRequests.map((req, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-sm text-amber-800"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream border border-ink/15 text-sm text-ink"
               >
                 {req}
                 <button
                   onClick={() => removeRequest(i)}
-                  className="text-amber-400 hover:text-red-500 transition-colors"
+                  className="text-ink/40 hover:text-accent transition-colors"
                 >
                   &times;
                 </button>
@@ -224,11 +219,11 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
       </div>
 
       {/* Chicken count */}
-      <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
-        <h2 className="text-lg font-semibold text-amber-800 mb-1">
+      <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
+        <h2 className="text-lg font-semibold text-ink mb-1">
           Chicken dishes this week
         </h2>
-        <p className="text-sm text-amber-500 mb-4">
+        <p className="text-sm text-ink/50 mb-4">
           How many chicken meals do you want?
         </p>
 
@@ -236,17 +231,17 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
           <button
             onClick={() => setChicken(chickenCount - 1)}
             disabled={chickenCount <= 0}
-            className="w-10 h-10 rounded-lg border border-amber-200 text-amber-700 font-bold text-lg hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-10 h-10 rounded-lg border border-ink/15 text-ink font-bold text-lg hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             -
           </button>
-          <span className="w-8 text-center text-xl font-semibold text-amber-800">
+          <span className="w-8 text-center text-xl font-semibold text-ink">
             {chickenCount}
           </span>
           <button
             onClick={() => setChicken(chickenCount + 1)}
             disabled={chickenCount >= 6}
-            className="w-10 h-10 rounded-lg border border-amber-200 text-amber-700 font-bold text-lg hover:bg-amber-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="w-10 h-10 rounded-lg border border-ink/15 text-ink font-bold text-lg hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             +
           </button>
@@ -254,24 +249,24 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
       </div>
 
       {/* Summary card */}
-      <div className="bg-amber-100 rounded-xl border border-amber-200 p-5">
-        <h3 className="text-sm font-semibold text-amber-700 mb-2">Week summary</h3>
+      <div className="bg-primary-light rounded-xl border border-primary/20 p-5">
+        <h3 className="text-sm font-semibold text-primary mb-2">Week summary</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="text-center">
-            <p className="text-2xl font-bold text-amber-800">{activeDays.length}</p>
-            <p className="text-xs text-amber-600">days</p>
+            <p className="text-2xl font-bold text-ink">{activeDays.length}</p>
+            <p className="text-xs text-ink/60">days</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-amber-800">{totalMealSlots}</p>
-            <p className="text-xs text-amber-600">meals</p>
+            <p className="text-2xl font-bold text-ink">{totalMealSlots}</p>
+            <p className="text-xs text-ink/60">meals</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-amber-800">{chickenCount}</p>
-            <p className="text-xs text-amber-600">chicken</p>
+            <p className="text-2xl font-bold text-ink">{chickenCount}</p>
+            <p className="text-xs text-ink/60">chicken</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-amber-800">{leftoversCount}</p>
-            <p className="text-xs text-amber-600">pantry items</p>
+            <p className="text-2xl font-bold text-ink">{leftoversCount}</p>
+            <p className="text-xs text-ink/60">pantry items</p>
           </div>
         </div>
       </div>
@@ -280,13 +275,13 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
       <div className="flex justify-between items-center">
         <button
           onClick={onBack}
-          className="px-5 py-2.5 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-100 transition-colors"
+          className="px-5 py-2.5 rounded-lg border border-ink/20 text-ink/70 hover:bg-primary-light transition-colors"
         >
           Back
         </button>
         <button
           onClick={onNext}
-          className="px-6 py-2.5 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 shadow-sm transition-colors"
+          className="px-6 py-2.5 rounded-lg bg-primary text-white font-medium hover:bg-primary-dark shadow-sm transition-colors"
         >
           Next
         </button>

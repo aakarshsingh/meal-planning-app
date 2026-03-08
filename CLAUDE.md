@@ -189,7 +189,7 @@ meal-planner/
 ## Data Model — Key Rules
 
 - **Servings**: All quantities are total for 2 people (not per person)
-- **Meal slots**: Breakfast, Lunch, Dinner, Fruit — 4 rows in the grid
+- **Meal slots**: Breakfast (includes drinks), Lunch, Dinner, Fruit — 4 visual rows in the grid
 - **Plan days**: Monday through Saturday (6 days)
 - **Breakfast**: Auto-suggested from a rotation of 9 options, user can override via drag-and-drop
 - **Lunch/Dinner**: Flexible — same meal can go in either slot. 22 meals in master list
@@ -250,26 +250,32 @@ API calls are budgeted to avoid spam and save costs:
 ## UI Flow
 
 ```
-Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 (Meal Plan + Outputs)
+Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Grid) → Screen 3 Part 2 (Review + Finalize)
 ```
 
 - **Header**: Calendar dropdown week picker (click to open month view, select a Monday), auto-detects next week on Sat/Sun, "Manage Meals" button
 - **Screen 1**: Autocomplete ingredient search, text qty input with fraction support (1/2, 1 1/3), fraction quick-pick buttons for bunch/nos/pc units
 - **Screen 2**: Day rows with inline breakfast/lunch/dinner skip checkboxes, clickable quick prompt chips (8 preset requests), chicken count stepper, summary card
-- **Screen 3**: Drag-and-drop meal grid, suggestion tray sidebar (desktop) / below grid (mobile), per-cell swap/remove/base-swap buttons, quick add new dish input
-- **SwapModal**: Rule-based + cached AI suggestions, free text "Add & Use" new dish input, 1 fresh AI override button
+- **Screen 3 Part 1** (Edit): Drag-and-drop meal grid with click-to-place alternative, Clear All / Restore buttons, suggestion tray sidebar (desktop) / below grid (mobile), "Review Plan" button
+- **Screen 3 Part 2** (Review): Weekly Chart + Grocery List + "Back to Edit" + "Finalize Week" button
+- **Grid rows**: Breakfast (combined breakfast items + drinks), Lunch, Dinner, Fruit — lunch/dinner interchangeable as main meals
+- **Click-to-place**: Click a tray chip → compatible empty cells highlight gold → click a cell to place. Escape to cancel.
+- **SwapModal**: Rule-based + cached AI suggestions, free text "Add & Use" new dish input, 1 fresh AI override button, drinks shown in morning row swap
+- **ManageMealsModal**: Inline editing (click item to edit name/type/base), add new items of any category (meal/breakfast/drink/fruit)
 - **WeeklyChart**: Copyable day-wise meal text (WhatsApp-friendly)
 - **GroceryList**: Categorized, copyable, "Optimize with AI" button
 - **Finalize**: Validates slots, saves to history, resets
 
 ## Style Guide
 
-- Tailwind CSS, warm color palette (food app feel)
+- Tailwind CSS with Helvetica font
+- Color palette: #EBEBD3 (cream/base), #00635D (teal/primary), #0C1B33 (navy/text), #F4D35E (gold/highlights), #DA4167 (red/accent for destructive actions)
+- Subtle use — cream base, white cards, teal buttons/links, gold for chicken highlights and selected states, red for remove/finalize
 - Meal type indicators: 🥚 egg, 🍗 chicken (no icon for veg — clean look)
 - Per-fruit emoji icons (🍎🥝🍇🍓🍌🍊 etc.)
-- Chicken meals get a subtle warm accent highlight in the grid
+- Chicken meals get a subtle gold accent highlight in the grid
 - Skipped days are greyed out
-- Drag targets show dashed border highlight
+- Drag targets show dashed teal border, click-to-place targets pulse gold
 - Responsive: grid scrolls horizontally on mobile, suggestion tray moves below grid
 
 ## Important Constraints

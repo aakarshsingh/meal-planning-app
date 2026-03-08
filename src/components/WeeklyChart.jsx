@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -18,7 +18,7 @@ function CopyButton({ text, label }) {
       className={`text-xs px-2.5 py-1 rounded-md transition-all ${
         copied
           ? 'bg-green-100 text-green-700 border border-green-300'
-          : 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'
+          : 'bg-cream text-ink/60 border border-ink/15 hover:bg-primary-light hover:text-primary'
       }`}
     >
       {copied ? 'Copied!' : label}
@@ -36,6 +36,7 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
     return (
       masterMeals.breakfasts?.find((b) => b.id === mealId) ||
       masterMeals.meals?.find((m) => m.id === mealId) ||
+      (masterMeals.drinks || []).find((d) => d.id === mealId) ||
       masterMeals.fruits?.find((f) => f.id === mealId)
     );
   }
@@ -48,31 +49,35 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
     return `${accompaniment}${meal.name}${qty}`;
   }
 
-  function formatFruits(fruitIds) {
-    if (!fruitIds || fruitIds.length === 0) return 'None';
-    return fruitIds
-      .map((id) => {
-        const fruit = findMeal(id);
-        return fruit ? fruit.name : id;
-      })
-      .join(', ');
+  function formatArraySlot(ids) {
+    if (!ids || ids.length === 0) return 'None';
+    return ids.map((id) => {
+      const item = findMeal(id);
+      return item ? item.name : id;
+    }).join(', ');
   }
 
   function formatDay(day) {
     if (skipDays.includes(day)) return `${day}:\n  Skipped`;
     const d = plan[day];
     if (!d) return `${day}:\n  No plan`;
+    const bfIds = Array.isArray(d.breakfast) ? d.breakfast : (d.breakfast ? [d.breakfast] : []);
+    const drinkIds = Array.isArray(d.drinks) ? d.drinks : (d.drinks ? [d.drinks] : []);
     const lines = [
       `${day}:`,
-      `  Breakfast: ${formatMealText(d.breakfast)}`,
+      `  Breakfast: ${bfIds.length > 0 ? bfIds.map((id) => formatMealText(id)).join(' + ') : 'None'}`,
+    ];
+    if (drinkIds.length > 0) {
+      lines.push(`  Drinks: ${formatArraySlot(drinkIds)}`);
+    }
+    lines.push(
       `  Lunch: ${formatMealText(d.lunch)}`,
       `  Dinner: ${formatMealText(d.dinner)}`,
-      `  Fruit: ${formatFruits(d.fruit)}`,
-    ];
+      `  Fruit: ${formatArraySlot(d.fruit)}`,
+    );
     return lines.join('\n');
   }
 
-  // Date range for header
   const now = new Date();
   const dayOfWeek = now.getDay();
   const monday = new Date(now);
@@ -84,9 +89,9 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
   const fullText = `Meal Plan: ${dateRange}\n\n${DAYS.map(formatDay).join('\n\n')}`;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-amber-800">Weekly Meal Chart</h2>
+        <h2 className="text-lg font-semibold text-ink">Weekly Meal Chart</h2>
         <CopyButton text={fullText} label="Copy Full Week" />
       </div>
 
@@ -95,16 +100,18 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
           const isSkipped = skipDays.includes(day);
           const d = plan[day];
           const dayText = formatDay(day);
+          const bfIds = d ? (Array.isArray(d.breakfast) ? d.breakfast : (d.breakfast ? [d.breakfast] : [])) : [];
+          const drinkIds = d ? (Array.isArray(d.drinks) ? d.drinks : (d.drinks ? [d.drinks] : [])) : [];
 
           return (
             <div
               key={day}
-              className={`rounded-lg p-3 ${isSkipped ? 'bg-gray-50' : 'bg-amber-50/50'}`}
+              className={`rounded-lg p-3 ${isSkipped ? 'bg-gray-50' : 'bg-cream/50'}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3
                   className={`text-sm font-semibold ${
-                    isSkipped ? 'text-gray-400' : 'text-amber-800'
+                    isSkipped ? 'text-gray-400' : 'text-ink'
                   }`}
                 >
                   {day}
@@ -115,26 +122,34 @@ function WeeklyChart({ plan, masterMeals, preferences }) {
               {isSkipped ? (
                 <p className="text-xs text-gray-400 italic">Skipped</p>
               ) : d ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
                   <div>
-                    <span className="text-amber-500 font-medium">Breakfast</span>
-                    <p className="text-amber-900 mt-0.5">{formatMealText(d.breakfast)}</p>
+                    <span className="text-primary font-medium">Breakfast</span>
+                    <p className="text-ink mt-0.5">
+                      {bfIds.length > 0 ? bfIds.map((id) => formatMealText(id)).join(' + ') : 'None'}
+                    </p>
+                  </div>
+                  {drinkIds.length > 0 && (
+                    <div>
+                      <span className="text-blue-500 font-medium">Drinks</span>
+                      <p className="text-ink mt-0.5">{formatArraySlot(drinkIds)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-primary font-medium">Lunch</span>
+                    <p className="text-ink mt-0.5">{formatMealText(d.lunch)}</p>
                   </div>
                   <div>
-                    <span className="text-amber-500 font-medium">Lunch</span>
-                    <p className="text-amber-900 mt-0.5">{formatMealText(d.lunch)}</p>
+                    <span className="text-primary font-medium">Dinner</span>
+                    <p className="text-ink mt-0.5">{formatMealText(d.dinner)}</p>
                   </div>
                   <div>
-                    <span className="text-amber-500 font-medium">Dinner</span>
-                    <p className="text-amber-900 mt-0.5">{formatMealText(d.dinner)}</p>
-                  </div>
-                  <div>
-                    <span className="text-amber-500 font-medium">Fruit</span>
-                    <p className="text-amber-900 mt-0.5">{formatFruits(d.fruit)}</p>
+                    <span className="text-primary font-medium">Fruit</span>
+                    <p className="text-ink mt-0.5">{formatArraySlot(d.fruit)}</p>
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-amber-400">No plan</p>
+                <p className="text-xs text-ink/40">No plan</p>
               )}
             </div>
           );

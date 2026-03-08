@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}', breakfast: '\u{2615}' };
+const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
 
 const FRUIT_ICONS = {
   'Guava': '\u{1F34F}',
@@ -34,7 +34,6 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
   const isChicken = meal.type === 'chicken';
   const isEgg = meal.type === 'egg';
   const isFruit = meal.type === 'fruit';
-  // Only show icons for egg, chicken, fruit — no icon for veg
   const icon = isFruit
     ? (FRUIT_ICONS[meal.name] || '\u{1F34E}')
     : TYPE_ICONS[meal.type] || '';
@@ -50,10 +49,10 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
           isFruit
             ? 'bg-green-50 border-green-200 text-green-800'
             : isChicken
-              ? 'bg-orange-50 border-orange-200 text-orange-800'
+              ? 'bg-gold-light border-gold/30 text-ink'
               : isEgg
-                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-                : 'bg-amber-50 border-amber-200 text-amber-800'
+                ? 'bg-gold-light/50 border-gold/20 text-ink/80'
+                : 'bg-cream border-ink/15 text-ink'
         }`}
       >
         {icon ? `${icon} ` : ''}{meal.name}
@@ -67,8 +66,8 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
       style={style}
       className={`rounded-lg border p-2 text-sm transition-shadow ${
         isChicken
-          ? 'bg-orange-50 border-orange-200 shadow-sm'
-          : 'bg-white border-amber-200 shadow-sm'
+          ? 'bg-gold-light border-gold/30 shadow-sm'
+          : 'bg-white border-ink/10 shadow-sm'
       }`}
     >
       {/* Drag handle area */}
@@ -78,12 +77,12 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
         className="cursor-grab active:cursor-grabbing flex items-start gap-1 mb-1"
       >
         {icon && <span className="text-base leading-none">{icon}</span>}
-        <span className="font-medium text-amber-900 leading-tight text-xs line-clamp-2 flex-1">
-          {meal.name}
+        <span className="font-medium text-ink leading-tight text-xs line-clamp-2 flex-1">
+          {meal.name}{meal.base ? ` + ${meal.base.charAt(0).toUpperCase() + meal.base.slice(1)}` : ''}
         </span>
       </div>
 
-      {/* Base label with swap */}
+      {/* Base swap buttons */}
       {meal.base && (
         <div className="flex items-center gap-1 mb-1">
           {onBaseChange ? (
@@ -94,8 +93,8 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
                   onClick={(e) => { e.stopPropagation(); onBaseChange(b); }}
                   className={`text-[9px] px-1 py-0.5 rounded capitalize transition-colors ${
                     meal.base === b
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-amber-100 text-amber-500 hover:bg-amber-200'
+                      ? 'bg-primary text-white'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
                   }`}
                 >
                   {b}
@@ -103,18 +102,18 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
               ))}
             </div>
           ) : (
-            <span className="text-[10px] text-amber-400 capitalize">{meal.base}</span>
+            <span className="text-[10px] text-ink/40 capitalize">{meal.base}</span>
           )}
         </div>
       )}
 
       {/* Actions row */}
-      <div className="flex items-center justify-between mt-1 pt-1 border-t border-amber-100">
+      <div className="flex items-center justify-between mt-1 pt-1 border-t border-ink/10">
         <div className="flex gap-1">
           {onSwap && (
             <button
               onClick={(e) => { e.stopPropagation(); onSwap(); }}
-              className="w-6 h-6 rounded text-xs hover:bg-amber-100 text-amber-500 transition-colors"
+              className="w-6 h-6 rounded text-xs hover:bg-primary-light text-ink/50 transition-colors"
               title="Swap"
             >
               {'\u{1F504}'}
@@ -123,7 +122,7 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
           {onRemove && (
             <button
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="w-6 h-6 rounded text-xs hover:bg-red-50 text-amber-400 hover:text-red-500 transition-colors"
+              className="w-6 h-6 rounded text-xs hover:bg-accent-light text-ink/40 hover:text-accent transition-colors"
               title="Remove"
             >
               &times;
@@ -134,16 +133,16 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChang
           <div className="flex items-center gap-0.5">
             <button
               onClick={(e) => { e.stopPropagation(); onQtyChange(-1); }}
-              className="w-5 h-5 rounded text-[10px] border border-amber-200 hover:bg-amber-50 text-amber-600"
+              className="w-5 h-5 rounded text-[10px] border border-ink/15 hover:bg-primary-light text-ink/60"
             >
               -
             </button>
-            <span className="text-[10px] text-amber-600 w-4 text-center">
+            <span className="text-[10px] text-ink/60 w-4 text-center">
               {meal.qty || meal.defaultQty}
             </span>
             <button
               onClick={(e) => { e.stopPropagation(); onQtyChange(1); }}
-              className="w-5 h-5 rounded text-[10px] border border-amber-200 hover:bg-amber-50 text-amber-600"
+              className="w-5 h-5 rounded text-[10px] border border-ink/15 hover:bg-primary-light text-ink/60"
             >
               +
             </button>

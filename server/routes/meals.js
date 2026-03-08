@@ -21,6 +21,7 @@ router.get('/:id', async (req, res) => {
     const item =
       data.breakfasts.find((b) => b.id === id) ||
       data.meals.find((m) => m.id === id) ||
+      (data.drinks || []).find((d) => d.id === id) ||
       data.fruits.find((f) => f.id === id);
     if (!item) {
       return res.status(404).json({ error: `Meal not found: ${id}` });

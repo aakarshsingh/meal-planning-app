@@ -27,7 +27,6 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
   const [viewDate, setViewDate] = useState(() => new Date(selMonday + 'T00:00:00'));
   const ref = useRef(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     function handleClick(e) {
@@ -41,15 +40,12 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
   const month = viewDate.getMonth();
   const monthName = viewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
-  // Build calendar grid
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  // Start grid from Monday (shift Sunday from 0 to 6)
   const startOffset = (firstDay.getDay() + 6) % 7;
   const totalDays = lastDay.getDate();
 
   const cells = [];
-  // Empty cells before first day
   for (let i = 0; i < startOffset; i++) cells.push(null);
   for (let d = 1; d <= totalDays; d++) cells.push(d);
 
@@ -76,31 +72,28 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => { setOpen(!open); setViewDate(new Date(selMonday + 'T00:00:00')); }}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-ink/15 hover:bg-primary-light transition-colors"
       >
-        <span className="text-sm text-amber-700 font-medium whitespace-nowrap">{weekLabel}</span>
-        <svg className={`w-3.5 h-3.5 text-amber-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <span className="text-sm text-ink font-medium whitespace-nowrap">{weekLabel}</span>
+        <svg className={`w-3.5 h-3.5 text-ink/40 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {open && (
-        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-xl border border-amber-100 p-3 w-72">
-          {/* Month nav */}
+        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-xl border border-ink/10 p-3 w-72">
           <div className="flex items-center justify-between mb-2">
-            <button onClick={() => shiftMonth(-1)} className="w-7 h-7 rounded-md hover:bg-amber-50 text-amber-500 text-sm">&lsaquo;</button>
-            <span className="text-sm font-semibold text-amber-800">{monthName}</span>
-            <button onClick={() => shiftMonth(1)} className="w-7 h-7 rounded-md hover:bg-amber-50 text-amber-500 text-sm">&rsaquo;</button>
+            <button onClick={() => shiftMonth(-1)} className="w-7 h-7 rounded-md hover:bg-primary-light text-primary text-sm">&lsaquo;</button>
+            <span className="text-sm font-semibold text-ink">{monthName}</span>
+            <button onClick={() => shiftMonth(1)} className="w-7 h-7 rounded-md hover:bg-primary-light text-primary text-sm">&rsaquo;</button>
           </div>
 
-          {/* Day headers */}
           <div className="grid grid-cols-7 mb-1">
             {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-              <div key={i} className="text-[10px] text-amber-400 text-center font-medium py-1">{d}</div>
+              <div key={i} className="text-[10px] text-ink/40 text-center font-medium py-1">{d}</div>
             ))}
           </div>
 
-          {/* Day cells */}
           <div className="grid grid-cols-7">
             {cells.map((day, i) => {
               if (!day) return <div key={i} />;
@@ -108,8 +101,7 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
               const isMonday = date.getDay() === 1;
               const isSelected = isMonday && date.getTime() === selMon.getTime();
               const isToday = date.getTime() === today.getTime();
-              // Highlight Mon-Sat of selected week
-              const inSelectedWeek = date >= selMon && date <= selSat;
+              const inSelectedWeek = date >= selMon && date <= selSat && date.getDay() !== 0;
 
               return (
                 <button
@@ -118,14 +110,14 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
                   disabled={!isMonday}
                   className={`w-8 h-8 mx-auto rounded-md text-xs transition-colors ${
                     isSelected
-                      ? 'bg-amber-500 text-white font-bold'
+                      ? 'bg-primary text-white font-bold'
                       : inSelectedWeek
-                        ? 'bg-amber-100 text-amber-700 font-medium'
+                        ? 'bg-primary-light text-primary font-medium'
                         : isToday
-                          ? 'ring-1 ring-amber-400 text-amber-700 font-medium'
+                          ? 'ring-1 ring-primary text-ink font-medium'
                           : isMonday
-                            ? 'text-amber-800 hover:bg-amber-50 font-medium cursor-pointer'
-                            : 'text-amber-300 cursor-default'
+                            ? 'text-ink hover:bg-primary-light font-medium cursor-pointer'
+                            : 'text-ink/30 cursor-default'
                   }`}
                 >
                   {day}
@@ -134,7 +126,7 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
             })}
           </div>
 
-          <p className="text-[10px] text-amber-400 text-center mt-2">Click a Monday to select the week</p>
+          <p className="text-[10px] text-ink/40 text-center mt-2">Click a Monday to select the week</p>
         </div>
       )}
     </div>
@@ -149,24 +141,24 @@ function StepIndicator({ currentStep }) {
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
               i < currentStep
-                ? 'bg-amber-600 text-white'
+                ? 'bg-primary text-white'
                 : i === currentStep
-                  ? 'bg-amber-500 text-white ring-2 ring-amber-300'
-                  : 'bg-amber-100 text-amber-400'
+                  ? 'bg-gold text-ink ring-2 ring-gold/50'
+                  : 'bg-ink/10 text-ink/40'
             }`}
           >
             {i < currentStep ? '\u2713' : i + 1}
           </div>
           <span
             className={`text-sm hidden sm:inline ${
-              i === currentStep ? 'text-amber-800 font-semibold' : 'text-amber-400'
+              i === currentStep ? 'text-ink font-semibold' : 'text-ink/40'
             }`}
           >
             {label}
           </span>
           {i < STEP_LABELS.length - 1 && (
             <div
-              className={`w-8 h-0.5 ${i < currentStep ? 'bg-amber-500' : 'bg-amber-200'}`}
+              className={`w-8 h-0.5 ${i < currentStep ? 'bg-primary' : 'bg-ink/15'}`}
             />
           )}
         </div>
@@ -185,6 +177,7 @@ function App() {
     chickenCount: 2,
   });
   const [plan, setPlan] = useState(null);
+  const [planReady, setPlanReady] = useState(false);
   const [groceryList, setGroceryList] = useState(null);
   const [masterMeals, setMasterMeals] = useState(null);
   const [finalizing, setFinalizing] = useState(false);
@@ -192,11 +185,9 @@ function App() {
   const [showManageMeals, setShowManageMeals] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(null);
 
-  // Week date range — find Monday of current week (app is used Sat/Sun for next week)
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
     const dayOfWeek = now.getDay();
-    // If it's Sat(6) or Sun(0), plan for next week's Monday
     if (dayOfWeek === 6 || dayOfWeek === 0) {
       const nextMon = new Date(now);
       nextMon.setDate(now.getDate() + (dayOfWeek === 0 ? 1 : 2));
@@ -215,7 +206,6 @@ function App() {
   const toastRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
-  // Load master meals once
   useEffect(() => {
     fetch('/api/meals')
       .then((r) => r.json())
@@ -223,7 +213,6 @@ function App() {
       .catch(() => toastRef.current?.error('Failed to load meals data'));
   }, []);
 
-  // Check for existing plan on load (resume prompt)
   useEffect(() => {
     fetch('/api/planner/current')
       .then((r) => r.json())
@@ -232,7 +221,7 @@ function App() {
           const hasContent = DAYS.some(
             (day) =>
               data.plan[day] &&
-              (data.plan[day].breakfast || data.plan[day].lunch || data.plan[day].dinner || (data.plan[day].fruit && data.plan[day].fruit.length > 0))
+              ((Array.isArray(data.plan[day].breakfast) ? data.plan[day].breakfast.length > 0 : data.plan[day].breakfast) || data.plan[day].lunch || data.plan[day].dinner || (data.plan[day].fruit && data.plan[day].fruit.length > 0))
           );
           if (hasContent && !data.finalized) {
             setResumePrompt(data);
@@ -242,7 +231,6 @@ function App() {
       .catch(() => {});
   }, []);
 
-  // Auto-save current week on plan change (debounced 2s)
   const autoSave = useCallback(() => {
     if (!plan) return;
 
@@ -310,9 +298,8 @@ function App() {
       let chickenCount = 0;
       for (const day of DAYS) {
         if (!plan[day]) continue;
-        for (const slot of ['breakfast', 'lunch', 'dinner']) {
-          const mealId = plan[day][slot];
-          if (!mealId) continue;
+        const allIds = [plan[day].lunch, plan[day].dinner].filter(Boolean);
+        for (const mealId of allIds) {
           const meal = masterMeals.meals?.find((m) => m.id === mealId);
           if (meal?.type === 'chicken') chickenCount++;
         }
@@ -340,6 +327,20 @@ function App() {
     }
 
     return { errors, warnings };
+  }
+
+  function handleReviewPlan() {
+    if (!plan) return;
+    const { errors } = validatePlan();
+    if (errors.length > 0) {
+      toastRef.current?.error(`Fix before reviewing: ${errors[0]}`);
+      return;
+    }
+    setPlanReady(true);
+  }
+
+  function handleBackToEdit() {
+    setPlanReady(false);
   }
 
   function handleFinalize() {
@@ -386,6 +387,7 @@ function App() {
         toastRef.current?.success('Week finalized and saved to history!');
         setTimeout(() => {
           setPlan(null);
+          setPlanReady(false);
           setLeftovers([]);
           setPreferences({
             skipDays: [],
@@ -405,21 +407,20 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-cream">
       <ToastContainer toastRef={toastRef} />
 
-      <header className="bg-white border-b border-amber-200 shadow-sm">
+      <header className="bg-white border-b border-ink/10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <h1 className="text-xl font-bold text-amber-800 shrink-0">
+          <h1 className="text-xl font-bold text-ink shrink-0">
             Meal Planner
           </h1>
 
-          {/* Week selector — calendar dropdown */}
           <WeekCalendarPicker selMonday={weekMonday} onSelect={setWeekMonday} />
 
           <button
             onClick={() => setShowManageMeals(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors shrink-0"
+            className="text-xs px-3 py-1.5 rounded-lg border border-ink/15 text-ink/70 hover:bg-primary-light hover:text-primary transition-colors shrink-0"
           >
             Manage Meals
           </button>
@@ -429,23 +430,23 @@ function App() {
       <main className={`mx-auto px-4 py-6 ${step === 2 ? 'max-w-6xl' : 'max-w-4xl'}`}>
         {/* Resume prompt */}
         {resumePrompt && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+          <div className="mb-6 bg-primary-light border border-primary/20 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-blue-800">You have an in-progress meal plan</p>
-              <p className="text-xs text-blue-500 mt-0.5">
+              <p className="text-sm font-medium text-ink">You have an in-progress meal plan</p>
+              <p className="text-xs text-ink/50 mt-0.5">
                 Week of {resumePrompt.weekStart} to {resumePrompt.weekEnd}
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleStartFresh}
-                className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-sm text-ink/60 hover:bg-white/50 rounded-lg transition-colors"
               >
                 Start Fresh
               </button>
               <button
                 onClick={handleResume}
-                className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-3 py-1.5 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
               >
                 Resume
               </button>
@@ -475,26 +476,54 @@ function App() {
 
         {step === 2 && (
           <div className="space-y-6">
-            <MealGrid
-              leftovers={leftovers}
-              preferences={preferences}
-              plan={plan}
-              setPlan={setPlan}
-              onBack={() => setStep(1)}
-              toastRef={toastRef}
-            />
-
-            {plan && masterMeals && (
+            {/* Phase 1: Editable grid */}
+            {!planReady && (
               <>
+                <MealGrid
+                  leftovers={leftovers}
+                  preferences={preferences}
+                  plan={plan}
+                  setPlan={setPlan}
+                  onBack={() => setStep(1)}
+                  toastRef={toastRef}
+                />
+
+                {plan && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={handleReviewPlan}
+                      className="px-8 py-3 rounded-xl bg-primary text-white font-semibold text-lg hover:bg-primary-dark shadow-md transition-colors"
+                    >
+                      Review Plan
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Phase 2: Review — chart, grocery, finalize */}
+            {planReady && plan && masterMeals && (
+              <>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={handleBackToEdit}
+                    className="px-4 py-2 rounded-lg border border-ink/15 text-ink/70 hover:bg-primary-light transition-colors text-sm"
+                  >
+                    &larr; Back to Edit
+                  </button>
+                  <h2 className="text-lg font-semibold text-ink">Review Your Plan</h2>
+                  <div className="w-24" />
+                </div>
+
                 {/* Validation warnings */}
                 {(() => {
                   const { warnings } = validatePlan();
                   if (warnings.length === 0) return null;
                   return (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="bg-gold-light border border-gold/30 rounded-lg p-3">
                       {warnings.map((w, i) => (
-                        <p key={i} className="text-xs text-yellow-700 flex items-center gap-1.5">
-                          <span className="text-yellow-500">&#9888;</span> {w}
+                        <p key={i} className="text-xs text-ink/70 flex items-center gap-1.5">
+                          <span className="text-gold">&#9888;</span> {w}
                         </p>
                       ))}
                     </div>
@@ -519,7 +548,7 @@ function App() {
                     <button
                       onClick={handleFinalize}
                       disabled={finalizing}
-                      className="px-8 py-3 rounded-xl bg-amber-600 text-white font-semibold text-lg hover:bg-amber-700 shadow-md disabled:opacity-50 transition-colors"
+                      className="px-8 py-3 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent/90 shadow-md disabled:opacity-50 transition-colors"
                     >
                       {finalizing ? 'Saving...' : 'Finalize Week'}
                     </button>

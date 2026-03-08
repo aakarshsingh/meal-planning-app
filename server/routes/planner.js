@@ -4,7 +4,7 @@ import { readJSON, writeJSON, appendToHistory } from '../utils/fileStore.js';
 const router = Router();
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'fruit'];
+const MEAL_TYPES = ['breakfast', 'drinks', 'lunch', 'dinner', 'fruit'];
 
 // GET /api/planner/current
 router.get('/current', async (req, res) => {
@@ -43,12 +43,11 @@ router.put('/current/slot', async (req, res) => {
 
     const current = await readJSON('current-week.json');
     if (!current.plan[day]) {
-      current.plan[day] = { breakfast: null, lunch: null, dinner: null, fruit: [] };
+      current.plan[day] = { breakfast: [], drinks: [], lunch: null, dinner: null, fruit: [] };
     }
 
-    if (mealType === 'fruit') {
-      // mealId can be an array of fruit IDs or a single ID to add
-      current.plan[day].fruit = Array.isArray(mealId) ? mealId : [mealId];
+    if (mealType === 'fruit' || mealType === 'breakfast' || mealType === 'drinks') {
+      current.plan[day][mealType] = Array.isArray(mealId) ? mealId : [mealId];
     } else {
       current.plan[day][mealType] = mealId;
     }
@@ -91,7 +90,7 @@ router.post('/finalize', async (req, res) => {
       finalized: false,
     };
     for (const day of DAYS) {
-      blank.plan[day] = { breakfast: null, lunch: null, dinner: null, fruit: [] };
+      blank.plan[day] = { breakfast: [], drinks: [], lunch: null, dinner: null, fruit: [] };
     }
     await writeJSON('current-week.json', blank);
 

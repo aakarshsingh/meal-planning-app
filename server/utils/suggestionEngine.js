@@ -23,7 +23,9 @@ function getRecentMealIds(history, weeksBack) {
   const usedIds = new Set();
   for (const week of recentWeeks) {
     for (const day of Object.values(week.days)) {
-      if (day.breakfast) usedIds.add(day.breakfast);
+      // Handle breakfast as array or string (backward compat with history)
+      const bfIds = Array.isArray(day.breakfast) ? day.breakfast : (day.breakfast ? [day.breakfast] : []);
+      for (const id of bfIds) usedIds.add(id);
       if (day.lunch) usedIds.add(day.lunch);
       if (day.dinner) usedIds.add(day.dinner);
     }
@@ -48,6 +50,8 @@ function getCurrentWeekMealIds(plan) {
   const used = new Set();
   for (const day of DAYS) {
     if (!plan[day]) continue;
+    const bfIds = Array.isArray(plan[day].breakfast) ? plan[day].breakfast : (plan[day].breakfast ? [plan[day].breakfast] : []);
+    for (const id of bfIds) used.add(id);
     if (plan[day].lunch) used.add(plan[day].lunch);
     if (plan[day].dinner) used.add(plan[day].dinner);
   }
@@ -96,7 +100,7 @@ function pickBreakfasts(breakfasts, activeDays, leftovers, preferences) {
   for (const day of activeDays) {
     const skipMeals = preferences.skipMeals || [];
     if (skipMeals.some((s) => s.day === day && s.mealType === 'breakfast')) {
-      result[day] = null;
+      result[day] = [];
       continue;
     }
 
@@ -110,8 +114,8 @@ function pickBreakfasts(breakfasts, activeDays, leftovers, preferences) {
         break;
       }
     }
-    result[day] = chosen ? chosen.id : pool[0].id;
-    lastBfId = result[day];
+    result[day] = chosen ? [chosen.id] : [pool[0].id];
+    lastBfId = chosen ? chosen.id : pool[0].id;
   }
 
   return result;
@@ -260,10 +264,11 @@ export async function generateWeeklyPlan(leftovers = [], preferences = {}, histo
   const plan = {};
   for (const day of DAYS) {
     if (skipDays.includes(day)) {
-      plan[day] = { breakfast: null, lunch: null, dinner: null, fruit: [] };
+      plan[day] = { breakfast: [], drinks: [], lunch: null, dinner: null, fruit: [] };
     } else {
       plan[day] = {
-        breakfast: breakfasts[day] || null,
+        breakfast: breakfasts[day] || [],
+        drinks: ['drink-01'], // Default: Coffee
         lunch: meals[day]?.lunch || null,
         dinner: meals[day]?.dinner || null,
         fruit: fruits[day] || [],
@@ -284,12 +289,19 @@ export async function getSuggestions(day, mealType, currentPlan = {}, historyDat
   const currentWeekIds = getCurrentWeekMealIds(currentPlan);
 
   if (mealType === 'breakfast') {
-    // Return breakfasts not used this week in the same day
-    const currentBf = currentPlan[day]?.breakfast;
+    const currentBfIds = Array.isArray(currentPlan[day]?.breakfast) ? currentPlan[day].breakfast : (currentPlan[day]?.breakfast ? [currentPlan[day].breakfast] : []);
     return masterMeals.breakfasts
-      .filter((b) => b.id !== currentBf)
+      .filter((b) => !currentBfIds.includes(b.id))
       .slice(0, 5)
       .map((b) => ({ id: b.id, name: b.name, type: 'breakfast' }));
+  }
+
+  if (mealType === 'drinks') {
+    const drinks = masterMeals.drinks || [];
+    const currentDrinkIds = Array.isArray(currentPlan[day]?.drinks) ? currentPlan[day].drinks : [];
+    return drinks
+      .filter((d) => !currentDrinkIds.includes(d.id))
+      .map((d) => ({ id: d.id, name: d.name, type: 'drink' }));
   }
 
   if (mealType === 'fruit') {

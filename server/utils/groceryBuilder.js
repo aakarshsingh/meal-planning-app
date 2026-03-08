@@ -2,10 +2,36 @@ import { readJSON } from './fileStore.js';
 
 const CATEGORY_ORDER = ['vegetable', 'dairy', 'protein', 'staple', 'bakery', 'ready-mix', 'spice', 'fruit'];
 
+// Unit conversion: normalize to base units (g, ml) for consistent aggregation
+function toGrams(qty, unit) {
+  if (unit === 'kg') return qty * 1000;
+  if (unit === 'g') return qty;
+  return null; // not a weight unit
+}
+
+function toMl(qty, unit) {
+  if (unit === 'l') return qty * 1000;
+  if (unit === 'ml') return qty;
+  return null; // not a volume unit
+}
+
+// Convert aggregated base-unit qty to purchase unit
+function toPurchaseUnit(qty, recipeUnit, purchaseUnit) {
+  // Weight conversions
+  if (recipeUnit === 'g' && purchaseUnit === 'kg') return qty / 1000;
+  if (recipeUnit === 'kg' && purchaseUnit === 'g') return qty * 1000;
+  // Volume conversions
+  if (recipeUnit === 'ml' && purchaseUnit === 'l') return qty / 1000;
+  if (recipeUnit === 'l' && purchaseUnit === 'ml') return qty * 1000;
+  // Same unit or non-convertible (nos, pk, bunch, etc.)
+  return qty;
+}
+
 function findMealById(masterMeals, mealId) {
   return (
     masterMeals.breakfasts.find((b) => b.id === mealId) ||
     masterMeals.meals.find((m) => m.id === mealId) ||
+    (masterMeals.drinks || []).find((d) => d.id === mealId) ||
     masterMeals.fruits.find((f) => f.id === mealId)
   );
 }
@@ -14,7 +40,10 @@ function aggregateIngredients(plan, masterMeals) {
   const totals = {}; // ingredientId -> { qty, unit }
 
   for (const day of Object.values(plan)) {
-    const mealIds = [day.breakfast, day.lunch, day.dinner].filter(Boolean);
+    // Breakfast can be array or string
+    const breakfastIds = Array.isArray(day.breakfast) ? day.breakfast : [day.breakfast];
+    const drinkIds = Array.isArray(day.drinks) ? day.drinks : (day.drinks ? [day.drinks] : []);
+    const mealIds = [...breakfastIds, ...drinkIds, day.lunch, day.dinner].filter(Boolean);
 
     for (const mealId of mealIds) {
       const meal = findMealById(masterMeals, mealId);
@@ -24,11 +53,31 @@ function aggregateIngredients(plan, masterMeals) {
         if (!totals[ing.ingredientId]) {
           totals[ing.ingredientId] = { qty: 0, unit: ing.unit };
         }
-        totals[ing.ingredientId].qty += ing.qty;
+        // Normalize to same unit before summing
+        const existingUnit = totals[ing.ingredientId].unit;
+        if (ing.unit === existingUnit) {
+          totals[ing.ingredientId].qty += ing.qty;
+        } else {
+          // Try converting to existing unit
+          const gExisting = toGrams(totals[ing.ingredientId].qty, existingUnit);
+          const gNew = toGrams(ing.qty, ing.unit);
+          if (gExisting !== null && gNew !== null) {
+            totals[ing.ingredientId] = { qty: gExisting + gNew, unit: 'g' };
+          } else {
+            const mlExisting = toMl(totals[ing.ingredientId].qty, existingUnit);
+            const mlNew = toMl(ing.qty, ing.unit);
+            if (mlExisting !== null && mlNew !== null) {
+              totals[ing.ingredientId] = { qty: mlExisting + mlNew, unit: 'ml' };
+            } else {
+              // Can't convert, just add raw
+              totals[ing.ingredientId].qty += ing.qty;
+            }
+          }
+        }
       }
     }
 
-    // Fruits don't have ingredient refs in the same way — they are the items themselves
+    // Fruits — they are the items themselves
     if (day.fruit && day.fruit.length > 0) {
       for (const fruitId of day.fruit) {
         const fruit = masterMeals.fruits.find((f) => f.id === fruitId);
@@ -47,8 +96,15 @@ function aggregateIngredients(plan, masterMeals) {
 function subtractLeftovers(totals, leftovers) {
   for (const leftover of leftovers) {
     if (totals[leftover.ingredientId]) {
-      totals[leftover.ingredientId].qty -= leftover.qty;
-      totals[leftover.ingredientId].leftover = leftover.qty;
+      const totalUnit = totals[leftover.ingredientId].unit;
+      const leftoverUnit = leftover.unit || totalUnit;
+      // Convert leftover to total's unit before subtracting
+      let leftoverQty = leftover.qty;
+      if (leftoverUnit !== totalUnit) {
+        leftoverQty = toPurchaseUnit(leftover.qty, leftoverUnit, totalUnit);
+      }
+      totals[leftover.ingredientId].qty -= leftoverQty;
+      totals[leftover.ingredientId].leftover = leftoverQty;
     }
   }
   return totals;
@@ -103,11 +159,13 @@ export async function buildGroceryList(plan, leftovers = []) {
   // Build items grouped by category
   const categoryMap = {};
 
-  for (const [ingId, { qty: rawQty, unit, leftover }] of Object.entries(totals)) {
+  for (const [ingId, { qty: rawQty, unit: recipeUnit, leftover }] of Object.entries(totals)) {
     const ing = ingredientMap[ingId];
     if (!ing) continue;
 
-    const needed = Math.max(0, rawQty);
+    // Convert from recipe unit (g/ml) to purchase unit (kg/l) before rounding
+    const convertedQty = toPurchaseUnit(rawQty, recipeUnit, ing.purchaseUnit);
+    const needed = Math.max(0, convertedQty);
 
     // Skip alwaysInStock items unless plan needs significantly more than 1 purchase unit
     if (ing.alwaysInStock && needed <= ing.purchaseQty && !alwaysInclude.includes(ingId)) {
@@ -122,13 +180,16 @@ export async function buildGroceryList(plan, leftovers = []) {
       categoryMap[category] = [];
     }
 
+    // Convert leftover to purchase unit for display
+    const leftoverDisplay = leftover ? toPurchaseUnit(leftover, recipeUnit, ing.purchaseUnit) : 0;
+
     categoryMap[category].push({
       id: ingId,
       name: ing.name,
       qty: purchaseQty || ing.purchaseQty,
       unit: ing.purchaseUnit,
-      needed: Math.max(0, rawQty),
-      leftover: leftover || 0,
+      needed: Math.max(0, convertedQty),
+      leftover: leftoverDisplay,
     });
   }
 
