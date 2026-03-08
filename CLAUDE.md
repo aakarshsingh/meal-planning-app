@@ -28,16 +28,16 @@
 - [x] **Verify**: `PUT /api/planner/current/slot` with `{"day":"Monday","mealType":"lunch","mealId":"meal-04"}` updates current-week.json
 
 ### Milestone 3: Suggestion Engine (Rule-Based)
-- [ ] `server/utils/suggestionEngine.js` — `generateWeeklyPlan(leftovers, preferences, history)` returns full week plan
-- [ ] Breakfast: auto-rotate 9 options, no consecutive repeats, prefer leftover-using breakfasts
-- [ ] Lunch/Dinner: exclude meals from last 3 weeks (history.json), score +3 leftover usage / +1 base alternation / -10 same week
-- [ ] Enforce exactly 2 chicken meals per week (from config.json), rest veg/egg
-- [ ] No same meal twice within a week
-- [ ] Respect skipDays and skipMeals from preferences
-- [ ] Fruit: rotate 6 options, 1-2 per day, no same fruit consecutive days
-- [ ] `getSuggestions(day, mealType, currentPlan, history)` — returns 5 swap alternatives
-- [ ] `server/routes/suggest.js` — `POST /api/suggest/plan`, `POST /api/suggest/swap`
-- [ ] **Verify**: `POST /api/suggest/plan` with empty leftovers → 6 days filled, 2 chicken, no repeats
+- [x] `server/utils/suggestionEngine.js` — `generateWeeklyPlan(leftovers, preferences, history)` returns full week plan
+- [x] Breakfast: auto-rotate 9 options, no consecutive repeats, prefer leftover-using breakfasts
+- [x] Lunch/Dinner: exclude meals from last 3 weeks (history.json), score +3 leftover usage / +1 base alternation / -10 same week
+- [x] Enforce exactly 2 chicken meals per week (from config.json), rest veg/egg
+- [x] No same meal twice within a week
+- [x] Respect skipDays and skipMeals from preferences
+- [x] Fruit: rotate 6 options, 1-2 per day, no same fruit consecutive days
+- [x] `getSuggestions(day, mealType, currentPlan, history)` — returns 5 swap alternatives
+- [x] `server/routes/suggest.js` — `POST /api/suggest/plan`, `POST /api/suggest/swap`
+- [x] **Verify**: `POST /api/suggest/plan` with empty leftovers → 6 days filled, 2 chicken, no repeats
 
 ### Milestone 4: Grocery Builder
 - [ ] `server/utils/groceryBuilder.js` — `buildGroceryList(plan, leftovers)`
