@@ -7,8 +7,20 @@ import GroceryList from './components/GroceryList';
 import ManageMealsModal from './components/ManageMealsModal';
 import { ToastContainer } from './components/Toast';
 
-const STEP_LABELS = ['Leftovers', 'Preferences', 'Meal Plan'];
+const STEP_LABELS = ['Pantry Stock', 'Preferences', 'Meal Plan'];
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function getWeekMonday(date) {
+  const d = new Date(date);
+  const dayOfWeek = d.getDay();
+  d.setDate(d.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatDateShort(date) {
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
 
 function StepIndicator({ currentStep }) {
   return (
@@ -61,6 +73,28 @@ function App() {
   const [showManageMeals, setShowManageMeals] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(null);
 
+  // Week date range — find Monday of current week (app is used Sat/Sun for next week)
+  const [weekMonday, setWeekMonday] = useState(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    // If it's Sat(6) or Sun(0), plan for next week's Monday
+    if (dayOfWeek === 6 || dayOfWeek === 0) {
+      const nextMon = new Date(now);
+      nextMon.setDate(now.getDate() + (dayOfWeek === 0 ? 1 : 2));
+      return nextMon.toISOString().slice(0, 10);
+    }
+    return getWeekMonday(now).toISOString().slice(0, 10);
+  });
+
+  const weekSaturday = (() => {
+    const mon = new Date(weekMonday + 'T00:00:00');
+    const sat = new Date(mon);
+    sat.setDate(mon.getDate() + 5);
+    return sat;
+  })();
+
+  const weekLabel = `${formatDateShort(new Date(weekMonday + 'T00:00:00'))} - ${formatDateShort(weekSaturday)}`;
+
   const toastRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
@@ -78,7 +112,6 @@ function App() {
       .then((r) => r.json())
       .then((data) => {
         if (data.plan && Object.keys(data.plan).length > 0) {
-          // Check if any slot is filled
           const hasContent = DAYS.some(
             (day) =>
               data.plan[day] &&
@@ -98,16 +131,9 @@ function App() {
 
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      const saturday = new Date(monday);
-      saturday.setDate(monday.getDate() + 5);
-
       const currentWeek = {
-        weekStart: monday.toISOString().slice(0, 10),
-        weekEnd: saturday.toISOString().slice(0, 10),
+        weekStart: weekMonday,
+        weekEnd: weekSaturday.toISOString().slice(0, 10),
         leftovers,
         preferences,
         plan,
@@ -121,7 +147,7 @@ function App() {
         body: JSON.stringify(currentWeek),
       }).catch(() => {});
     }, 2000);
-  }, [plan, leftovers, preferences]);
+  }, [plan, leftovers, preferences, weekMonday, weekSaturday]);
 
   useEffect(() => {
     autoSave();
@@ -135,6 +161,7 @@ function App() {
     setPlan(resumePrompt.plan);
     if (resumePrompt.leftovers) setLeftovers(resumePrompt.leftovers);
     if (resumePrompt.preferences) setPreferences(resumePrompt.preferences);
+    if (resumePrompt.weekStart) setWeekMonday(resumePrompt.weekStart);
     setStep(2);
     setResumePrompt(null);
     toastRef.current?.success('Resumed previous plan');
@@ -145,11 +172,10 @@ function App() {
   }
 
   function validatePlan() {
-    if (!plan) return ['No plan generated yet'];
+    if (!plan) return { errors: ['No plan generated yet'], warnings: [] };
     const errors = [];
     const warnings = [];
 
-    // Check empty lunch/dinner slots
     for (const day of DAYS) {
       if (preferences.skipDays?.includes(day)) continue;
       const d = plan[day];
@@ -163,7 +189,6 @@ function App() {
       if (!d.dinner && !isDinnerSkipped) errors.push(`${day} dinner is empty`);
     }
 
-    // Chicken count check
     if (masterMeals) {
       let chickenCount = 0;
       for (const day of DAYS) {
@@ -181,7 +206,6 @@ function App() {
       }
     }
 
-    // Duplicate meal check
     const mealCounts = {};
     for (const day of DAYS) {
       if (!plan[day]) continue;
@@ -217,16 +241,9 @@ function App() {
 
     setFinalizing(true);
 
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-    const saturday = new Date(monday);
-    saturday.setDate(monday.getDate() + 5);
-
     const currentWeek = {
-      weekStart: monday.toISOString().slice(0, 10),
-      weekEnd: saturday.toISOString().slice(0, 10),
+      weekStart: weekMonday,
+      weekEnd: weekSaturday.toISOString().slice(0, 10),
       leftovers,
       preferences,
       plan,
@@ -270,18 +287,44 @@ function App() {
       });
   }
 
+  function shiftWeek(delta) {
+    const mon = new Date(weekMonday + 'T00:00:00');
+    mon.setDate(mon.getDate() + (delta * 7));
+    setWeekMonday(mon.toISOString().slice(0, 10));
+  }
+
   return (
     <div className="min-h-screen bg-amber-50">
       <ToastContainer toastRef={toastRef} />
 
       <header className="bg-white border-b border-amber-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-amber-800">
-            Weekly Meal Planner
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-bold text-amber-800 shrink-0">
+            Meal Planner
           </h1>
+
+          {/* Week selector */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => shiftWeek(-1)}
+              className="w-7 h-7 rounded-md border border-amber-200 text-amber-500 hover:bg-amber-50 text-sm transition-colors"
+            >
+              &lsaquo;
+            </button>
+            <span className="text-sm text-amber-700 font-medium whitespace-nowrap">
+              {weekLabel}
+            </span>
+            <button
+              onClick={() => shiftWeek(1)}
+              className="w-7 h-7 rounded-md border border-amber-200 text-amber-500 hover:bg-amber-50 text-sm transition-colors"
+            >
+              &rsaquo;
+            </button>
+          </div>
+
           <button
             onClick={() => setShowManageMeals(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-lg border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors shrink-0"
           >
             Manage Meals
           </button>

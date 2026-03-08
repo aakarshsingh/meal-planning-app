@@ -13,6 +13,21 @@ const CATEGORY_LABELS = {
 
 const UNIT_OPTIONS = ['g', 'kg', 'ml', 'l', 'nos', 'pk', 'bunch', 'slices', 'box', 'pc'];
 
+const FRACTION_PRESETS = ['1/4', '1/3', '1/2', '2/3', '3/4'];
+
+function parseFraction(val) {
+  if (typeof val === 'number') return val;
+  const str = String(val).trim();
+  // Handle fractions like "1/2"
+  const fractionMatch = str.match(/^(\d+)\/(\d+)$/);
+  if (fractionMatch) return Number(fractionMatch[1]) / Number(fractionMatch[2]);
+  // Handle mixed like "1 1/2"
+  const mixedMatch = str.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if (mixedMatch) return Number(mixedMatch[1]) + Number(mixedMatch[2]) / Number(mixedMatch[3]);
+  const n = Number(str);
+  return isNaN(n) ? 0 : n;
+}
+
 function LeftoverInput({ leftovers, setLeftovers, onNext }) {
   const [ingredients, setIngredients] = useState([]);
   const [search, setSearch] = useState('');
@@ -60,10 +75,10 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
   function handleSelect(ing) {
     setSelected(ing);
     setSearch(ing.name);
-    setQty(ing.purchaseQty || '');
+    // Don't auto-fill qty — user's stock is almost always less than purchase qty
+    setQty('');
     setUnit(ing.purchaseUnit || 'g');
     setShowDropdown(false);
-    // Focus qty input after selection
     setTimeout(() => {
       const qtyInput = document.getElementById('leftover-qty');
       if (qtyInput) qtyInput.focus();
@@ -72,13 +87,16 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
 
   function handleAdd() {
     if (!selected || !qty) return;
+    const parsed = parseFraction(qty);
+    if (parsed <= 0) return;
     setLeftovers((prev) => [
       ...prev,
       {
         ingredientId: selected.id,
         name: selected.name,
         category: selected.category,
-        qty: Number(qty),
+        qty: parsed,
+        qtyDisplay: qty, // preserve "1/2" for display
         unit,
       },
     ]);
@@ -123,10 +141,10 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
         <h2 className="text-lg font-semibold text-amber-800 mb-1">
-          What leftovers do you have?
+          What's in your pantry?
         </h2>
         <p className="text-sm text-amber-500 mb-4">
-          Add ingredients you already have so we can plan meals around them.
+          Add ingredients you already have in stock so we can plan meals around them.
         </p>
 
         {/* Search + Add row */}
@@ -166,16 +184,32 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
           </div>
 
           <div className="flex gap-2">
-            <input
-              id="leftover-qty"
-              type="number"
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Qty"
-              min="0"
-              className="w-20 px-3 py-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-amber-900 placeholder-amber-300"
-            />
+            <div className="relative">
+              <input
+                id="leftover-qty"
+                type="text"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Qty"
+                className="w-20 px-3 py-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-amber-900 placeholder-amber-300"
+              />
+              {/* Fraction quick-picks shown when qty is focused and unit is bunch/nos/pc */}
+              {selected && ['bunch', 'nos', 'pc', 'pk', 'box'].includes(unit) && !qty && (
+                <div className="absolute top-full left-0 mt-1 flex gap-1 z-10">
+                  {FRACTION_PRESETS.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setQty(f)}
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200"
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
@@ -198,11 +232,11 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
         </div>
       </div>
 
-      {/* Added leftovers */}
+      {/* Added stock items */}
       {leftovers.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
           <h3 className="text-sm font-semibold text-amber-700 mb-3">
-            Added leftovers ({leftovers.length})
+            Pantry stock ({leftovers.length})
           </h3>
           <div className="space-y-4">
             {Object.entries(grouped).map(([cat, items]) => (
@@ -218,7 +252,7 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
                     >
                       <span className="font-medium">{l.name}</span>
                       <span className="text-amber-500">
-                        {l.qty} {l.unit}
+                        {l.qtyDisplay || l.qty} {l.unit}
                       </span>
                       <button
                         onClick={() => handleRemove(l.ingredientId)}
@@ -245,7 +279,7 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
           }}
           className="text-sm text-amber-500 hover:text-amber-700 underline underline-offset-2 transition-colors"
         >
-          No leftovers, skip
+          Nothing in stock, skip
         </button>
         <button
           onClick={onNext}

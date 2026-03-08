@@ -1,9 +1,25 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const TYPE_ICONS = { veg: '\u{1F96C}', egg: '\u{1F95A}', chicken: '\u{1F357}', breakfast: '\u{2615}', fruit: '\u{1F34E}' };
+const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}', breakfast: '\u{2615}' };
 
-function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, compact }) {
+const FRUIT_ICONS = {
+  'Guava': '\u{1F34F}',
+  'Pomegranate': '\u{1F9C3}',
+  'Apple': '\u{1F34E}',
+  'Kiwi': '\u{1F95D}',
+  'Grapes': '\u{1F347}',
+  'Strawberry': '\u{1F353}',
+  'Banana': '\u{1F34C}',
+  'Orange': '\u{1F34A}',
+  'Mango': '\u{1F96D}',
+  'Watermelon': '\u{1F349}',
+  'Papaya': '\u{1F352}',
+};
+
+const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles'];
+
+function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, onBaseChange, compact }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: dragId });
 
@@ -16,7 +32,12 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, compact }) 
   if (!meal) return null;
 
   const isChicken = meal.type === 'chicken';
-  const icon = TYPE_ICONS[meal.type] || TYPE_ICONS.veg;
+  const isEgg = meal.type === 'egg';
+  const isFruit = meal.type === 'fruit';
+  // Only show icons for egg, chicken, fruit — no icon for veg
+  const icon = isFruit
+    ? (FRUIT_ICONS[meal.name] || '\u{1F34E}')
+    : TYPE_ICONS[meal.type] || '';
 
   if (compact) {
     return (
@@ -25,9 +46,17 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, compact }) 
         style={style}
         {...attributes}
         {...listeners}
-        className="px-2 py-1 rounded bg-amber-50 border border-amber-200 text-xs text-amber-800 cursor-grab active:cursor-grabbing truncate"
+        className={`px-2 py-1 rounded border text-xs cursor-grab active:cursor-grabbing truncate ${
+          isFruit
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : isChicken
+              ? 'bg-orange-50 border-orange-200 text-orange-800'
+              : isEgg
+                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+        }`}
       >
-        {icon} {meal.name}
+        {icon ? `${icon} ` : ''}{meal.name}
       </div>
     );
   }
@@ -48,15 +77,35 @@ function MealCard({ id, meal, dragId, onRemove, onSwap, onQtyChange, compact }) 
         {...listeners}
         className="cursor-grab active:cursor-grabbing flex items-start gap-1 mb-1"
       >
-        <span className="text-base leading-none">{icon}</span>
+        {icon && <span className="text-base leading-none">{icon}</span>}
         <span className="font-medium text-amber-900 leading-tight text-xs line-clamp-2 flex-1">
           {meal.name}
         </span>
       </div>
 
-      {/* Base label */}
+      {/* Base label with swap */}
       {meal.base && (
-        <span className="text-[10px] text-amber-400 capitalize">{meal.base}</span>
+        <div className="flex items-center gap-1 mb-1">
+          {onBaseChange ? (
+            <div className="flex gap-0.5">
+              {BASE_OPTIONS.map((b) => (
+                <button
+                  key={b}
+                  onClick={(e) => { e.stopPropagation(); onBaseChange(b); }}
+                  className={`text-[9px] px-1 py-0.5 rounded capitalize transition-colors ${
+                    meal.base === b
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-amber-100 text-amber-500 hover:bg-amber-200'
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span className="text-[10px] text-amber-400 capitalize">{meal.base}</span>
+          )}
+        </div>
       )}
 
       {/* Actions row */}

@@ -4,6 +4,17 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const DAY_SHORT = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat' };
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'];
 
+const QUICK_REQUESTS = [
+  'No rice this week',
+  'Light meals on weekdays',
+  'More parathas',
+  'Something Punjabi',
+  'No eggs this week',
+  'Extra veggies',
+  'Quick meals only',
+  'Something new / experimental',
+];
+
 function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, onNext }) {
   const [requestText, setRequestText] = useState('');
 
@@ -11,14 +22,12 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
 
   function toggleDay(day) {
     if (skipDays.includes(day)) {
-      // Un-skip: remove from skipDays and clear any skipMeals for this day
       setPreferences((p) => ({
         ...p,
         skipDays: p.skipDays.filter((d) => d !== day),
         skipMeals: p.skipMeals.filter((s) => s.day !== day),
       }));
     } else {
-      // Skip entire day: add to skipDays, remove individual meal skips
       setPreferences((p) => ({
         ...p,
         skipDays: [...p.skipDays, day],
@@ -35,19 +44,29 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
         skipMeals: p.skipMeals.filter((s) => !(s.day === day && s.mealType === mealType)),
       }));
     } else {
-      setPreferences((p) => ({
-        ...p,
-        skipMeals: [...p.skipMeals, { day, mealType }],
-      }));
+      // If skipping all 3 meals for a day, skip the whole day instead
+      const otherSkips = skipMeals.filter((s) => s.day === day);
+      if (otherSkips.length === 2) {
+        setPreferences((p) => ({
+          ...p,
+          skipDays: [...p.skipDays, day],
+          skipMeals: p.skipMeals.filter((s) => s.day !== day),
+        }));
+      } else {
+        setPreferences((p) => ({
+          ...p,
+          skipMeals: [...p.skipMeals, { day, mealType }],
+        }));
+      }
     }
   }
 
-  function addRequest() {
-    const text = requestText.trim();
-    if (!text) return;
+  function addRequest(text) {
+    const t = (text || requestText).trim();
+    if (!t || specialRequests.includes(t)) return;
     setPreferences((p) => ({
       ...p,
-      specialRequests: [...p.specialRequests, text],
+      specialRequests: [...p.specialRequests, t],
     }));
     setRequestText('');
   }
@@ -67,94 +86,81 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
   const activeDays = DAYS.filter((d) => !skipDays.includes(d));
   const totalMealSlots = activeDays.reduce((sum, day) => {
     const skippedForDay = skipMeals.filter((s) => s.day === day).length;
-    return sum + (3 - skippedForDay); // 3 meals per day minus skipped
+    return sum + (3 - skippedForDay);
   }, 0);
-
-  // Check if a day has individual meal skips (partially skipped)
-  function dayHasMealSkips(day) {
-    return skipMeals.some((s) => s.day === day);
-  }
 
   return (
     <div className="space-y-6">
-      {/* Day skip toggles */}
+      {/* Day & meal planning */}
       <div className="bg-white rounded-xl shadow-sm border border-amber-100 p-6">
         <h2 className="text-lg font-semibold text-amber-800 mb-1">
-          Which days are you planning for?
+          Plan your week
         </h2>
         <p className="text-sm text-amber-500 mb-4">
-          Toggle off days you're eating out or skipping. Click a skipped day to skip specific meals only.
+          Toggle days off or skip individual meals. Tap a day button to skip the entire day.
         </p>
 
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        <div className="space-y-2">
           {DAYS.map((day) => {
-            const isSkipped = skipDays.includes(day);
-            const hasPartialSkips = dayHasMealSkips(day);
+            const isFullySkipped = skipDays.includes(day);
 
             return (
-              <div key={day} className="flex flex-col items-center gap-1">
-                <button
-                  onClick={() => toggleDay(day)}
-                  className={`w-full py-3 rounded-lg font-medium text-sm transition-all ${
-                    isSkipped
-                      ? 'bg-gray-100 text-gray-400 border border-gray-200'
-                      : hasPartialSkips
-                        ? 'bg-amber-100 text-amber-700 border-2 border-amber-300'
-                        : 'bg-amber-500 text-white shadow-sm hover:bg-amber-600'
-                  }`}
-                >
-                  {DAY_SHORT[day]}
-                </button>
-                {isSkipped && (
-                  <span className="text-xs text-gray-400">skipped</span>
-                )}
+              <div
+                key={day}
+                className={`rounded-lg p-3 transition-colors ${
+                  isFullySkipped ? 'bg-gray-50' : 'bg-amber-50/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Day toggle */}
+                  <button
+                    onClick={() => toggleDay(day)}
+                    className={`w-14 py-1.5 rounded-md font-medium text-sm transition-all shrink-0 ${
+                      isFullySkipped
+                        ? 'bg-gray-200 text-gray-400'
+                        : 'bg-amber-500 text-white hover:bg-amber-600'
+                    }`}
+                  >
+                    {DAY_SHORT[day]}
+                  </button>
+
+                  {isFullySkipped ? (
+                    <span className="text-xs text-gray-400 italic">Entire day skipped</span>
+                  ) : (
+                    /* Per-meal toggles */
+                    <div className="flex gap-3 flex-1">
+                      {MEAL_TYPES.map((mt) => {
+                        const isSkipped = skipMeals.some(
+                          (s) => s.day === day && s.mealType === mt
+                        );
+                        return (
+                          <label
+                            key={mt}
+                            className="flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!isSkipped}
+                              onChange={() => toggleMealSkip(day, mt)}
+                              className="rounded border-amber-300 text-amber-500 focus:ring-amber-400"
+                            />
+                            <span
+                              className={`text-xs capitalize ${
+                                isSkipped ? 'text-gray-400 line-through' : 'text-amber-700'
+                              }`}
+                            >
+                              {mt}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
-
-        {/* Individual meal skip checkboxes for active days */}
-        {activeDays.length > 0 && activeDays.length < 6 && (
-          <div className="mt-4 pt-4 border-t border-amber-100">
-            <p className="text-xs font-medium text-amber-500 uppercase tracking-wide mb-3">
-              Skip specific meals
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {activeDays.map((day) => (
-                <div key={day} className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-amber-700 w-12">
-                    {DAY_SHORT[day]}
-                  </span>
-                  {MEAL_TYPES.map((mt) => {
-                    const isSkipped = skipMeals.some(
-                      (s) => s.day === day && s.mealType === mt
-                    );
-                    return (
-                      <label
-                        key={mt}
-                        className="flex items-center gap-1 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSkipped}
-                          onChange={() => toggleMealSkip(day, mt)}
-                          className="rounded border-amber-300 text-amber-500 focus:ring-amber-400"
-                        />
-                        <span
-                          className={`text-xs capitalize ${
-                            isSkipped ? 'text-gray-400 line-through' : 'text-amber-600'
-                          }`}
-                        >
-                          {mt}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Special requests */}
@@ -162,9 +168,22 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
         <h2 className="text-lg font-semibold text-amber-800 mb-1">
           Special requests
         </h2>
-        <p className="text-sm text-amber-500 mb-4">
+        <p className="text-sm text-amber-500 mb-3">
           Any preferences for this week's meals?
         </p>
+
+        {/* Quick request chips */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {QUICK_REQUESTS.filter((q) => !specialRequests.includes(q)).map((q) => (
+            <button
+              key={q}
+              onClick={() => addRequest(q)}
+              className="text-xs px-2.5 py-1 rounded-full border border-amber-200 text-amber-600 hover:bg-amber-50 hover:border-amber-300 transition-colors"
+            >
+              + {q}
+            </button>
+          ))}
+        </div>
 
         <div className="flex gap-2">
           <input
@@ -172,11 +191,11 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
             value={requestText}
             onChange={(e) => setRequestText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addRequest()}
-            placeholder="e.g. no rice this week, light meals on weekdays"
+            placeholder="Or type your own..."
             className="flex-1 px-3 py-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-amber-900 placeholder-amber-300 text-sm"
           />
           <button
-            onClick={addRequest}
+            onClick={() => addRequest()}
             disabled={!requestText.trim()}
             className="px-4 py-2 rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
           >
@@ -252,7 +271,7 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-amber-800">{leftoversCount}</p>
-            <p className="text-xs text-amber-600">leftovers</p>
+            <p className="text-xs text-amber-600">pantry items</p>
           </div>
         </div>
       </div>
