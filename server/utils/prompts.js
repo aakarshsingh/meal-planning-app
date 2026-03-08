@@ -51,30 +51,33 @@ function formatHistory(history) {
 }
 
 export function buildPlanPrompt(masterMeals, leftovers, preferences, history) {
-  return `You are a meal planner for a 2-person North Indian household. Generate a weekly meal plan for Monday through Saturday.
+  const chickenCount = preferences.chickenCount || 2;
 
-Available meals:
+  return `You are an expert meal planner for a 2-person North Indian household. Generate a thoughtful weekly meal plan (Monday–Saturday) that feels curated, not random.
+
+Available meals (use ONLY these IDs):
 ${formatMealList(masterMeals)}
 
-Leftovers to use first: ${formatLeftovers(leftovers)}
+Pantry leftovers to prioritize: ${formatLeftovers(leftovers)}
 
-Preferences:
+User preferences:
 ${formatPreferences(preferences)}
 
-Last 2 weeks history (avoid repeating these meals):
+Recent history (AVOID repeating these):
 ${formatHistory(history)}
 
-Rules:
-- Exactly 2 chicken dishes per week, rest should be veg or egg
-- Do NOT repeat any lunch/dinner meal from the last 2 weeks history
-- No same meal twice within the same week
-- Use leftovers first — prefer meals that use leftover ingredients
-- Aim for 1 rice-based meal for every 2 roti/paratha-based meals for variety
-- Each day needs: breakfast, lunch, dinner, and 1-2 fruits
-- Skipped days/meals should be null
-- Only use meal IDs from the available meals list above
+Planning rules:
+1. Use ONLY meal IDs from the list above — do not invent IDs
+2. Exactly ${chickenCount} chicken dishes total across the week
+3. NEVER repeat the same meal ID twice in the same week
+4. AVOID meals used in the last 2 weeks history above
+5. If leftovers are available, choose meals that use those ingredients first
+6. Alternate bases for variety: don't have 3 rice-based meals in a row; mix rice, roti, paratha, pav, noodles
+7. Lighter meals (egg/breakfast-style) work well for weeknight dinners
+8. Each day needs: 1 breakfast, 1 lunch, 1 dinner, and 1-2 fruits
+9. Set skipped days/meals to null based on preferences above
 
-Respond with ONLY a JSON object in this exact format, no other text:
+Respond with ONLY valid JSON, no explanation:
 {
   "Monday": { "breakfast": "bf-XX", "lunch": "meal-XX", "dinner": "meal-XX", "fruit": ["fruit-XX"] },
   "Tuesday": { "breakfast": "bf-XX", "lunch": "meal-XX", "dinner": "meal-XX", "fruit": ["fruit-XX"] },

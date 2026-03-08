@@ -55,22 +55,80 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     });
   }, [skipDays, skipMeals]);
 
-  // Merge AI plan into existing plan and track which slots AI filled
+  // Merge AI plan into existing plan: REPLACE some rule-based slots with AI picks
+  // AI should visibly enhance the plan — at least 2 slots swapped
   function mergeAiPlan(prevPlan, aiData) {
-    if (!prevPlan) return aiData;
+    if (!prevPlan) {
+      // No existing plan — use AI plan directly, mark all lunch/dinner as AI
+      const placed = new Set();
+      for (const day of DAYS) {
+        if (aiData[day]?.lunch) placed.add(`${day}-lunch`);
+        if (aiData[day]?.dinner) placed.add(`${day}-dinner`);
+      }
+      setAiPlacedSlots(placed);
+      return aiData;
+    }
+
     const merged = { ...prevPlan };
     const placed = new Set();
+
+    // Collect all meal IDs used by AI plan to avoid duplicates
+    const aiMealIds = new Set();
     for (const day of DAYS) {
-      merged[day] = { ...merged[day] };
-      if (!merged[day].lunch && aiData[day]?.lunch) {
-        merged[day].lunch = aiData[day].lunch;
-        placed.add(`${day}-lunch`);
-      }
-      if (!merged[day].dinner && aiData[day]?.dinner) {
-        merged[day].dinner = aiData[day].dinner;
-        placed.add(`${day}-dinner`);
+      if (aiData[day]?.lunch) aiMealIds.add(aiData[day].lunch);
+      if (aiData[day]?.dinner) aiMealIds.add(aiData[day].dinner);
+    }
+
+    // Find slots where AI suggests something DIFFERENT from rule-based
+    const candidates = [];
+    for (const day of DAYS) {
+      if (skipDays.includes(day)) continue;
+      for (const slot of ['lunch', 'dinner']) {
+        const isSkipped = skipMeals.some((s) => s.day === day && s.mealType === slot);
+        if (isSkipped) continue;
+        const aiMeal = aiData[day]?.[slot];
+        const currentMeal = merged[day]?.[slot];
+        if (aiMeal && aiMeal !== currentMeal) {
+          candidates.push({ day, slot, aiMealId: aiMeal });
+        }
       }
     }
+
+    // Replace at least 2 slots (or all if fewer candidates)
+    const toReplace = candidates.slice(0, Math.max(2, Math.ceil(candidates.length * 0.3)));
+
+    // Track all meal IDs in merged plan (to prevent duplicates)
+    const usedIds = new Set();
+    for (const day of DAYS) {
+      if (merged[day]?.lunch) usedIds.add(merged[day].lunch);
+      if (merged[day]?.dinner) usedIds.add(merged[day].dinner);
+    }
+
+    for (const { day, slot, aiMealId } of toReplace) {
+      // Skip if this AI meal is already used elsewhere in the merged plan
+      if (usedIds.has(aiMealId)) continue;
+      // Remove old meal from used set, add new one
+      const oldMealId = merged[day]?.[slot];
+      if (oldMealId) usedIds.delete(oldMealId);
+      merged[day] = { ...merged[day] };
+      merged[day][slot] = aiMealId;
+      usedIds.add(aiMealId);
+      placed.add(`${day}-${slot}`);
+    }
+
+    // Also fill any truly empty slots with AI suggestions
+    for (const day of DAYS) {
+      if (skipDays.includes(day)) continue;
+      merged[day] = { ...merged[day] };
+      for (const slot of ['lunch', 'dinner']) {
+        if (!merged[day][slot] && aiData[day]?.[slot] && !usedIds.has(aiData[day][slot])) {
+          merged[day][slot] = aiData[day][slot];
+          usedIds.add(aiData[day][slot]);
+          placed.add(`${day}-${slot}`);
+        }
+      }
+    }
+
     setAiPlacedSlots(placed);
     initialPlanRef.current = JSON.parse(JSON.stringify(merged));
     return merged;
@@ -90,15 +148,25 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leftovers, preferences }),
         })
-          .then((r) => r.json())
+          .then((r) => {
+            if (!r.ok) throw new Error(`AI API returned ${r.status}`);
+            return r.json();
+          })
           .then((data) => {
             if (data.plan && data.source === 'ai') {
               setAiPlan(data.plan);
               setPlan((prev) => mergeAiPlan(prev, data.plan));
+              toastRef?.current?.success('AI enhanced your plan!');
+            } else if (data.source === 'rule-based') {
+              console.warn('AI generation fell back to rule-based on server');
             }
             setAiLoading(false);
           })
-          .catch(() => { setAiLoading(false); setAiFailed(true); });
+          .catch((err) => {
+            console.error('AI plan call failed:', err);
+            setAiLoading(false);
+            setAiFailed(true);
+          });
       }
       return;
     }
@@ -137,15 +205,25 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ leftovers, preferences }),
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`AI API returned ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (data.plan && data.source === 'ai') {
           setAiPlan(data.plan);
           setPlan((prev) => mergeAiPlan(prev, data.plan));
+          toastRef?.current?.success('AI enhanced your plan!');
+        } else if (data.source === 'rule-based') {
+          console.warn('AI generation fell back to rule-based on server');
         }
         setAiLoading(false);
       })
-      .catch(() => { setAiLoading(false); setAiFailed(true); });
+      .catch((err) => {
+        console.error('AI plan call failed:', err);
+        setAiLoading(false);
+        setAiFailed(true);
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const findMeal = useCallback(
