@@ -61,45 +61,45 @@
 - [x] **Verify**: With ANTHROPIC_API_KEY set, `POST /api/ai/generate-plan` returns valid plan
 
 ### Milestone 6: Screen 1 — Leftover Input
-- [ ] `src/App.jsx` — 3-step wizard with step indicator, Next/Back nav, global state for leftovers/preferences/plan/groceryList
-- [ ] `src/components/LeftoverInput.jsx`:
-  - [ ] Fetch ingredients from `GET /api/ingredients` on mount
-  - [ ] Autocomplete search by ingredient name
-  - [ ] Qty input + unit dropdown (pre-filled from ingredient data)
-  - [ ] Add button → leftover chips grouped by category
-  - [ ] Remove button on each chip
-  - [ ] "No leftovers" shortcut button
-- [ ] **Verify**: Type "pan" → autocomplete shows Paneer → add with qty → chip appears under Dairy → Next goes to Screen 2
+- [x] `src/App.jsx` — 3-step wizard with step indicator, Next/Back nav, global state for leftovers/preferences/plan/groceryList
+- [x] `src/components/LeftoverInput.jsx`:
+  - [x] Fetch ingredients from `GET /api/ingredients` on mount
+  - [x] Autocomplete search by ingredient name
+  - [x] Qty input + unit dropdown (pre-filled from ingredient data)
+  - [x] Add button → leftover chips grouped by category
+  - [x] Remove button on each chip
+  - [x] "No leftovers" shortcut button
+- [x] **Verify**: Type "pan" → autocomplete shows Paneer → add with qty → chip appears under Dairy → Next goes to Screen 2
 
 ### Milestone 7: Screen 2 — Week Preferences
-- [ ] `src/components/WeekPreferences.jsx`:
-  - [ ] Mon–Sat toggle buttons to skip full days
-  - [ ] Click skipped day → checkboxes to skip individual meals (breakfast/lunch/dinner)
-  - [ ] Special requests: free text + Add → removable tags
-  - [ ] Chicken count stepper (default 2)
-  - [ ] Summary card: "Planning for X days, Y meals, Z chicken dishes, N leftovers"
-- [ ] Back preserves Screen 1 state, Next goes to Screen 3
-- [ ] **Verify**: Skip Saturday dinner → summary updates → Back → leftovers preserved → Next → Screen 3
+- [x] `src/components/WeekPreferences.jsx`:
+  - [x] Mon–Sat toggle buttons to skip full days
+  - [x] Click skipped day → checkboxes to skip individual meals (breakfast/lunch/dinner)
+  - [x] Special requests: free text + Add → removable tags
+  - [x] Chicken count stepper (default 2)
+  - [x] Summary card: "Planning for X days, Y meals, Z chicken dishes, N leftovers"
+- [x] Back preserves Screen 1 state, Next goes to Screen 3
+- [x] **Verify**: Skip Saturday dinner → summary updates → Back → leftovers preserved → Next → Screen 3
 
 ### Milestone 8: Screen 3 — Meal Grid with Drag & Drop
-- [ ] Install @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
-- [ ] `src/components/MealGrid.jsx`:
-  - [ ] Grid: rows = [Breakfast, Lunch, Dinner, Fruit], columns = Mon–Sat
-  - [ ] Each cell = Droppable, each MealCard = Draggable
-  - [ ] Right sidebar: "Suggestions Tray" with draggable meal cards
-  - [ ] On mount: call `POST /api/suggest/plan` → populate grid
-  - [ ] Async: also call `POST /api/ai/generate-plan` → "Use AI suggestion" button if it returns
-  - [ ] Drag between cells = swap, drag from tray = replace, drag to 🗑️ zone = remove
-  - [ ] Skipped days greyed out, chicken meals warm accent
-- [ ] `src/components/MealCard.jsx`:
-  - [ ] Meal name, type icon (🥬/🥚/🍗), base label
-  - [ ] × remove, 🔄 swap, +/- qty adjuster
-- [ ] `src/components/SwapModal.jsx`:
-  - [ ] Triggered by 🔄 button
-  - [ ] Calls `POST /api/suggest/swap` + `POST /api/ai/swap-suggestions`
-  - [ ] Shows combined list with name, type, AI reasoning
-  - [ ] Click to replace
-- [ ] **Verify**: Grid populates, drag lunch Mon→Tue swaps, 🔄 opens modal with suggestions, × removes meal
+- [x] Install @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+- [x] `src/components/MealGrid.jsx`:
+  - [x] Grid: rows = [Breakfast, Lunch, Dinner, Fruit], columns = Mon–Sat
+  - [x] Each cell = Droppable, each MealCard = Draggable
+  - [x] Right sidebar: "Suggestions Tray" with draggable meal cards
+  - [x] On mount: call `POST /api/suggest/plan` → populate grid
+  - [x] Async: also call `POST /api/ai/generate-plan` → "Use AI suggestion" button if it returns
+  - [x] Drag between cells = swap, drag from tray = replace, drag to 🗑️ zone = remove
+  - [x] Skipped days greyed out, chicken meals warm accent
+- [x] `src/components/MealCard.jsx`:
+  - [x] Meal name, type icon (🥬/🥚/🍗), base label
+  - [x] × remove, 🔄 swap, +/- qty adjuster
+- [x] `src/components/SwapModal.jsx`:
+  - [x] Triggered by 🔄 button
+  - [x] Calls `POST /api/suggest/swap` + `POST /api/ai/swap-suggestions`
+  - [x] Shows combined list with name, type, AI reasoning
+  - [x] Click to replace
+- [x] **Verify**: Grid populates, drag lunch Mon→Tue swaps, 🔄 opens modal with suggestions, × removes meal
 
 ### Milestone 9: Outputs — Weekly Chart & Grocery List
 - [ ] `src/components/WeeklyChart.jsx`:
