@@ -102,18 +102,18 @@
 - [x] **Verify**: Grid populates, drag lunch Mon→Tue swaps, 🔄 opens modal with suggestions, × removes meal
 
 ### Milestone 9: Outputs — Weekly Chart & Grocery List
-- [ ] `src/components/WeeklyChart.jsx`:
-  - [ ] Formatted text matching PDF style (day headers, meal labels, quantities)
-  - [ ] "Copy Day" per day, "Copy Full Week" button
-  - [ ] navigator.clipboard.writeText + "Copied!" toast
-- [ ] `src/components/GroceryList.jsx`:
-  - [ ] Calls `POST /api/groceries/generate` when plan changes
-  - [ ] Grouped by category with emoji headers (🥬🥛🍗🏪🍞📦🍎)
-  - [ ] Leftover items shown struck-through with "(from leftovers)"
-  - [ ] "Copy Grocery List" button
-  - [ ] "Optimize with AI" button → shows Claude suggestions
-- [ ] "Finalize Week" button: calls `POST /api/planner/finalize` → saves to history → resets to Screen 1
-- [ ] **Verify**: Copy Full Week → paste in editor → correct format. Grocery list grouped. Finalize → history.json updated.
+- [x] `src/components/WeeklyChart.jsx`:
+  - [x] Formatted text matching PDF style (day headers, meal labels, quantities)
+  - [x] "Copy Day" per day, "Copy Full Week" button
+  - [x] navigator.clipboard.writeText + "Copied!" toast
+- [x] `src/components/GroceryList.jsx`:
+  - [x] Calls `POST /api/groceries/generate` when plan changes
+  - [x] Grouped by category with emoji headers (🥬🥛🍗🏪🍞📦🍎)
+  - [x] Leftover items shown struck-through with "(from leftovers)"
+  - [x] "Copy Grocery List" button
+  - [x] "Optimize with AI" button → shows Claude suggestions
+- [x] "Finalize Week" button: calls `POST /api/planner/finalize` → saves to history → resets to Screen 1
+- [x] **Verify**: Copy Full Week → paste in editor → correct format. Grocery list grouped. Finalize → history.json updated.
 
 ### Milestone 10: Polish & Edge Cases
 - [ ] Toast notifications (red errors, green success)

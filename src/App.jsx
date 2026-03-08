@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LeftoverInput from './components/LeftoverInput';
 import WeekPreferences from './components/WeekPreferences';
 import MealGrid from './components/MealGrid';
+import WeeklyChart from './components/WeeklyChart';
+import GroceryList from './components/GroceryList';
 
 const STEP_LABELS = ['Leftovers', 'Preferences', 'Meal Plan'];
 
@@ -50,6 +52,73 @@ function App() {
   });
   const [plan, setPlan] = useState(null);
   const [groceryList, setGroceryList] = useState(null);
+  const [masterMeals, setMasterMeals] = useState(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [finalized, setFinalized] = useState(false);
+
+  // Load master meals once
+  useEffect(() => {
+    fetch('/api/meals')
+      .then((r) => r.json())
+      .then(setMasterMeals)
+      .catch(() => {});
+  }, []);
+
+  function handleFinalize() {
+    if (!plan) return;
+    setFinalizing(true);
+
+    // First save the current plan
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5);
+
+    const currentWeek = {
+      weekStart: monday.toISOString().slice(0, 10),
+      weekEnd: saturday.toISOString().slice(0, 10),
+      leftovers,
+      preferences,
+      plan,
+      groceryList: [],
+      finalized: false,
+    };
+
+    // Save current week then finalize
+    fetch('/api/planner/current', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentWeek),
+    })
+      .then(() =>
+        fetch('/api/planner/finalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+      .then((r) => r.json())
+      .then(() => {
+        setFinalized(true);
+        setFinalizing(false);
+        setTimeout(() => {
+          // Reset everything for next week
+          setPlan(null);
+          setLeftovers([]);
+          setPreferences({
+            skipDays: [],
+            skipMeals: [],
+            specialRequests: [],
+            chickenCount: 2,
+          });
+          setGroceryList(null);
+          setFinalized(false);
+          setStep(0);
+        }, 2000);
+      })
+      .catch(() => setFinalizing(false));
+  }
 
   return (
     <div className="min-h-screen bg-amber-50">
@@ -83,13 +152,44 @@ function App() {
         )}
 
         {step === 2 && (
-          <MealGrid
-            leftovers={leftovers}
-            preferences={preferences}
-            plan={plan}
-            setPlan={setPlan}
-            onBack={() => setStep(1)}
-          />
+          <div className="space-y-6">
+            <MealGrid
+              leftovers={leftovers}
+              preferences={preferences}
+              plan={plan}
+              setPlan={setPlan}
+              onBack={() => setStep(1)}
+            />
+
+            {plan && masterMeals && (
+              <>
+                <WeeklyChart
+                  plan={plan}
+                  masterMeals={masterMeals}
+                  preferences={preferences}
+                />
+
+                <GroceryList plan={plan} leftovers={leftovers} />
+
+                {/* Finalize button */}
+                <div className="flex justify-center pt-2 pb-8">
+                  {finalized ? (
+                    <div className="px-6 py-3 rounded-xl bg-green-100 border border-green-300 text-green-700 font-medium">
+                      Week finalized! Resetting...
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleFinalize}
+                      disabled={finalizing}
+                      className="px-8 py-3 rounded-xl bg-amber-600 text-white font-semibold text-lg hover:bg-amber-700 shadow-md disabled:opacity-50 transition-colors"
+                    >
+                      {finalizing ? 'Saving...' : 'Finalize Week'}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </main>
     </div>
