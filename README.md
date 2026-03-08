@@ -14,6 +14,7 @@
 ## Features
 
 - **Master meal library** — 9 breakfasts, 22 lunch/dinner meals, 6 fruits seeded from ~6 months of real meal plans
+- **Week selector** — Calendar dropdown in header, click to open month view, select any Monday to set the week
 - **3-screen planning flow** — Pantry Stock → Preferences → Drag-and-drop weekly grid
 - **Drag & drop meal grid** — Swap meals between slots, drag from suggestion tray, drag out to remove
 - **Breakfast auto-rotation** with manual override
@@ -85,20 +86,23 @@ meal-planner/
 ## Screens
 
 ### Screen 1 — Pantry Stock
-Autocomplete from ingredient master. Enter quantities of ingredients you have in stock (supports fractions like 1/2 bunch). These become constraints — use available items first.
+Autocomplete from ingredient master. Enter quantities of ingredients you have in stock. Supports fractions (1/2, 1 1/3) with quick-pick buttons for common units (bunch, nos, pc). These become constraints — use available items first.
 
 ### Screen 2 — Week Preferences
-- Skip specific days or meals (e.g., "eating out Wednesday dinner")
-- Special requests (e.g., "no rice this week", "something Punjabi on Sunday")
+- Day rows with inline breakfast/lunch/dinner skip checkboxes (no extra clicks needed)
+- Clickable quick prompt chips: "No rice this week", "Light meals on weekdays", "Something Punjabi", etc.
+- Special requests: free text + Add → removable tags
 - Chicken count stepper (default 2)
-- Summary card with active days/meals/chicken/leftovers counts
+- Summary card with active days/meals/chicken/pantry item counts
 
 ### Screen 3 — Meal Planner Grid
 Weekly table: Mon–Sat × Breakfast, Lunch, Dinner, Fruit.
 
 - **Drag & drop** — Move meals between cells using `@dnd-kit`
-- **Suggestion tray** — Sidebar on desktop, below grid on mobile
-- **Swap button** — Per cell, shows 3-5 alternatives from master list + Claude suggestions
+- **Suggestion tray** — Sidebar on desktop, below grid on mobile, with rule-based + AI Picks (purple)
+- **Swap button** — Per cell, shows alternatives from master list + cached AI suggestions + 1 fresh AI override
+- **Base swap** — Inline rice/roti/paratha/pav/noodles buttons per meal card
+- **Free text dish** — "Add & Use" input in SwapModal and quick add in tray to create new meals on the fly
 - **Quantity adjust** — Quick +/- buttons per meal
 - **Auto-filled breakfast** — Rotated from 9 breakfast options, overridable
 - **Validation warnings** — Yellow banner for chicken count mismatch, duplicate meals
@@ -136,9 +140,9 @@ npm run dev
 
 ## Commands
 
-- `npm run dev` — starts both frontend (Vite, port 3000) and backend (Express, port 3001) concurrently
+- `npm run dev` / `npm start` — starts both frontend (Vite, port 3000) and backend (Express, port 3001) concurrently
 - `npm run server` — backend only
-- `npm run client` — frontend only
+- `npm run client` — frontend only (auto-opens browser)
 
 ## Environment Variables
 

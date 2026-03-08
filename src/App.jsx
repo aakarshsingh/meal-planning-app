@@ -22,6 +22,125 @@ function formatDateShort(date) {
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+function WeekCalendarPicker({ selMonday, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => new Date(selMonday + 'T00:00:00'));
+  const ref = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const monthName = viewDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+  // Build calendar grid
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  // Start grid from Monday (shift Sunday from 0 to 6)
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const totalDays = lastDay.getDate();
+
+  const cells = [];
+  // Empty cells before first day
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= totalDays; d++) cells.push(d);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const selMon = new Date(selMonday + 'T00:00:00');
+  const selSat = new Date(selMon);
+  selSat.setDate(selMon.getDate() + 5);
+  const weekLabel = `${formatDateShort(selMon)} - ${formatDateShort(selSat)}`;
+
+  function handleDayClick(day) {
+    if (!day) return;
+    const clicked = new Date(year, month, day);
+    if (clicked.getDay() !== 1) return;
+    onSelect(clicked.toISOString().slice(0, 10));
+    setOpen(false);
+  }
+
+  function shiftMonth(delta) {
+    setViewDate(new Date(year, month + delta, 1));
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => { setOpen(!open); setViewDate(new Date(selMonday + 'T00:00:00')); }}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 transition-colors"
+      >
+        <span className="text-sm text-amber-700 font-medium whitespace-nowrap">{weekLabel}</span>
+        <svg className={`w-3.5 h-3.5 text-amber-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-xl border border-amber-100 p-3 w-72">
+          {/* Month nav */}
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={() => shiftMonth(-1)} className="w-7 h-7 rounded-md hover:bg-amber-50 text-amber-500 text-sm">&lsaquo;</button>
+            <span className="text-sm font-semibold text-amber-800">{monthName}</span>
+            <button onClick={() => shiftMonth(1)} className="w-7 h-7 rounded-md hover:bg-amber-50 text-amber-500 text-sm">&rsaquo;</button>
+          </div>
+
+          {/* Day headers */}
+          <div className="grid grid-cols-7 mb-1">
+            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
+              <div key={i} className="text-[10px] text-amber-400 text-center font-medium py-1">{d}</div>
+            ))}
+          </div>
+
+          {/* Day cells */}
+          <div className="grid grid-cols-7">
+            {cells.map((day, i) => {
+              if (!day) return <div key={i} />;
+              const date = new Date(year, month, day);
+              const isMonday = date.getDay() === 1;
+              const isSelected = isMonday && date.getTime() === selMon.getTime();
+              const isToday = date.getTime() === today.getTime();
+              // Highlight Mon-Sat of selected week
+              const inSelectedWeek = date >= selMon && date <= selSat;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleDayClick(day)}
+                  disabled={!isMonday}
+                  className={`w-8 h-8 mx-auto rounded-md text-xs transition-colors ${
+                    isSelected
+                      ? 'bg-amber-500 text-white font-bold'
+                      : inSelectedWeek
+                        ? 'bg-amber-100 text-amber-700 font-medium'
+                        : isToday
+                          ? 'ring-1 ring-amber-400 text-amber-700 font-medium'
+                          : isMonday
+                            ? 'text-amber-800 hover:bg-amber-50 font-medium cursor-pointer'
+                            : 'text-amber-300 cursor-default'
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-[10px] text-amber-400 text-center mt-2">Click a Monday to select the week</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StepIndicator({ currentStep }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
@@ -92,8 +211,6 @@ function App() {
     sat.setDate(mon.getDate() + 5);
     return sat;
   })();
-
-  const weekLabel = `${formatDateShort(new Date(weekMonday + 'T00:00:00'))} - ${formatDateShort(weekSaturday)}`;
 
   const toastRef = useRef(null);
   const autoSaveTimer = useRef(null);
@@ -287,12 +404,6 @@ function App() {
       });
   }
 
-  function shiftWeek(delta) {
-    const mon = new Date(weekMonday + 'T00:00:00');
-    mon.setDate(mon.getDate() + (delta * 7));
-    setWeekMonday(mon.toISOString().slice(0, 10));
-  }
-
   return (
     <div className="min-h-screen bg-amber-50">
       <ToastContainer toastRef={toastRef} />
@@ -303,24 +414,8 @@ function App() {
             Meal Planner
           </h1>
 
-          {/* Week selector */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => shiftWeek(-1)}
-              className="w-7 h-7 rounded-md border border-amber-200 text-amber-500 hover:bg-amber-50 text-sm transition-colors"
-            >
-              &lsaquo;
-            </button>
-            <span className="text-sm text-amber-700 font-medium whitespace-nowrap">
-              {weekLabel}
-            </span>
-            <button
-              onClick={() => shiftWeek(1)}
-              className="w-7 h-7 rounded-md border border-amber-200 text-amber-500 hover:bg-amber-50 text-sm transition-colors"
-            >
-              &rsaquo;
-            </button>
-          </div>
+          {/* Week selector — calendar dropdown */}
+          <WeekCalendarPicker selMonday={weekMonday} onSelect={setWeekMonday} />
 
           <button
             onClick={() => setShowManageMeals(true)}

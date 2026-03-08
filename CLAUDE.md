@@ -166,7 +166,7 @@ meal-planner/
 ├── src/
 │   ├── App.jsx                  # 3-step wizard with auto-save, resume, validation
 │   └── components/
-│       ├── LeftoverInput.jsx    # Screen 1: autocomplete ingredient search, qty input
+│       ├── LeftoverInput.jsx    # Screen 1: pantry stock input, fraction qty support
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
 │       ├── MealGrid.jsx         # Screen 3: drag-and-drop weekly grid
 │       ├── MealCard.jsx         # Draggable meal tile with swap/remove/qty buttons
@@ -182,9 +182,9 @@ meal-planner/
 
 ## Commands
 
-- `npm run dev` — starts both frontend (Vite, port 3000) and backend (Express, port 3001) concurrently
+- `npm run dev` / `npm start` — starts both frontend (Vite, port 3000) and backend (Express, port 3001) concurrently
 - `npm run server` — backend only
-- `npm run client` — frontend only
+- `npm run client` — frontend only (auto-opens browser)
 
 ## Data Model — Key Rules
 
@@ -250,25 +250,27 @@ API calls are budgeted to avoid spam and save costs:
 ## UI Flow
 
 ```
-Screen 1 (LeftoverInput) → Screen 2 (WeekPreferences) → Screen 3 (MealGrid + Outputs)
+Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 (Meal Plan + Outputs)
 ```
 
-Screen 3 contains:
-- Drag-and-drop meal grid (main interaction)
-- Suggestion tray sidebar (draggable source)
-- SwapModal (triggered per cell)
-- WeeklyChart (copyable text output below grid)
-- GroceryList (categorized, copyable, below grid)
-- "Finalize Week" button (saves to history, resets)
+- **Header**: Calendar dropdown week picker (click to open month view, select a Monday), auto-detects next week on Sat/Sun, "Manage Meals" button
+- **Screen 1**: Autocomplete ingredient search, text qty input with fraction support (1/2, 1 1/3), fraction quick-pick buttons for bunch/nos/pc units
+- **Screen 2**: Day rows with inline breakfast/lunch/dinner skip checkboxes, clickable quick prompt chips (8 preset requests), chicken count stepper, summary card
+- **Screen 3**: Drag-and-drop meal grid, suggestion tray sidebar (desktop) / below grid (mobile), per-cell swap/remove/base-swap buttons, quick add new dish input
+- **SwapModal**: Rule-based + cached AI suggestions, free text "Add & Use" new dish input, 1 fresh AI override button
+- **WeeklyChart**: Copyable day-wise meal text (WhatsApp-friendly)
+- **GroceryList**: Categorized, copyable, "Optimize with AI" button
+- **Finalize**: Validates slots, saves to history, resets
 
 ## Style Guide
 
 - Tailwind CSS, warm color palette (food app feel)
-- Meal type indicators: 🥬 veg, 🥚 egg, 🍗 chicken
+- Meal type indicators: 🥚 egg, 🍗 chicken (no icon for veg — clean look)
+- Per-fruit emoji icons (🍎🥝🍇🍓🍌🍊 etc.)
 - Chicken meals get a subtle warm accent highlight in the grid
 - Skipped days are greyed out
 - Drag targets show dashed border highlight
-- Responsive: grid scrolls horizontally on mobile
+- Responsive: grid scrolls horizontally on mobile, suggestion tray moves below grid
 
 ## Important Constraints
 
