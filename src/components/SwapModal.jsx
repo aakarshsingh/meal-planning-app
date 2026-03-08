@@ -65,7 +65,7 @@ function SwapModal({ day, mealType, currentPlan, onSelect, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white rounded-xl shadow-xl w-full max-w-md mx-2 sm:mx-4 max-h-[80vh] sm:max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-amber-100 flex justify-between items-center">

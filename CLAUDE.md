@@ -116,17 +116,17 @@
 - [x] **Verify**: Copy Full Week → paste in editor → correct format. Grocery list grouped. Finalize → history.json updated.
 
 ### Milestone 10: Polish & Edge Cases
-- [ ] Toast notifications (red errors, green success)
-- [ ] Claude API failure → silent fallback to rule-based
-- [ ] Loading spinners on API calls
-- [ ] Empty states: "Drop a meal here" dashed cells, "All meals planned!" in tray
-- [ ] Validation: block finalize if lunch/dinner slots empty, warn if chicken count off
-- [ ] Responsive: horizontal scroll on mobile grid, full-width modal on mobile
-- [ ] Keyboard: Escape closes modal, Enter triggers search
-- [ ] Auto-save current-week.json on plan changes (debounced 2s)
-- [ ] On load: if current-week.json has plan → "Resume?" or "Start fresh" prompt
-- [ ] "Manage Meals" modal: view all master meals, add new meal → writes to master-meals.json
-- [ ] **Verify**: Resume works after browser close. Finalize with empty slots warns. Mobile layout scrolls.
+- [x] Toast notifications (red errors, green success)
+- [x] Claude API failure → silent fallback to rule-based
+- [x] Loading spinners on API calls
+- [x] Empty states: "Drop a meal here" dashed cells, "All meals planned!" in tray
+- [x] Validation: block finalize if lunch/dinner slots empty, warn if chicken count off
+- [x] Responsive: horizontal scroll on mobile grid, full-width modal on mobile
+- [x] Keyboard: Escape closes modal, Enter triggers search
+- [x] Auto-save current-week.json on plan changes (debounced 2s)
+- [x] On load: if current-week.json has plan → "Resume?" or "Start fresh" prompt
+- [x] "Manage Meals" modal: view all master meals, add new meal → writes to master-meals.json
+- [x] **Verify**: Resume works after browser close. Finalize with empty slots warns. Mobile layout scrolls.
 
 ## Project Overview
 

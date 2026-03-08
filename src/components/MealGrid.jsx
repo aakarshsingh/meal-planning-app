@@ -65,7 +65,7 @@ function TrashZone({ isOver }) {
   );
 }
 
-function MealGrid({ leftovers, preferences, plan, setPlan, onBack }) {
+function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiPlan, setAiPlan] = useState(null);
@@ -101,7 +101,10 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack }) {
         setPlan(data.plan);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        toastRef?.current?.error('Failed to generate meal plan');
+      });
 
     // AI plan (async enhancement)
     setAiLoading(true);
@@ -430,7 +433,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack }) {
               </div>
             </div>
 
-            {/* Suggestion tray sidebar */}
+            {/* Suggestion tray sidebar (desktop) */}
             <div className="w-44 shrink-0 hidden lg:block">
               <div className="bg-white rounded-xl border border-amber-100 shadow-sm p-3 sticky top-4 max-h-[70vh] overflow-y-auto">
                 <h3 className="text-xs font-semibold text-amber-700 mb-2">Suggestions</h3>
@@ -468,6 +471,33 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack }) {
               </div>
             </div>
           </div>
+
+          {/* Suggestion tray (mobile — below grid) */}
+          {(trayMeals.length > 0 || trayFruits.length > 0) && (
+            <div className="lg:hidden bg-white rounded-xl border border-amber-100 shadow-sm p-3">
+              <h3 className="text-xs font-semibold text-amber-700 mb-2">Available Meals</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {trayMeals.map((m) => (
+                  <MealCard
+                    key={m.id}
+                    id={m.id}
+                    meal={m}
+                    dragId={`tray-${m.id}`}
+                    compact
+                  />
+                ))}
+                {trayFruits.map((f) => (
+                  <MealCard
+                    key={f.id}
+                    id={f.id}
+                    meal={{ ...f, type: 'fruit' }}
+                    dragId={`tray-${f.id}`}
+                    compact
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Trash zone */}
           <TrashZone isOver={false} />
