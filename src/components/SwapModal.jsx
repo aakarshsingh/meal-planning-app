@@ -4,14 +4,12 @@ const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
 
 function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose, toastRef }) {
   const [suggestions, setSuggestions] = useState([]);
-  const [aiSuggestions, setAiSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [aiLoading, setAiLoading] = useState(true);
   const [newDishName, setNewDishName] = useState('');
   const [addingSaving, setAddingSaving] = useState(false);
 
   useEffect(() => {
-    // Rule-based suggestions
+    // Rule-based suggestions only — no AI call (saved for plan generation)
     fetch('/api/suggest/swap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -23,19 +21,6 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
         setLoading(false);
       })
       .catch(() => setLoading(false));
-
-    // AI suggestions (async enhancement)
-    fetch('/api/ai/swap-suggestions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ day, mealType, currentPlan }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setAiSuggestions(data.suggestions || []);
-        setAiLoading(false);
-      })
-      .catch(() => setAiLoading(false));
   }, [day, mealType, currentPlan]);
 
   useEffect(() => {
@@ -46,23 +31,10 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  // Merge: rule-based first, then AI (dedup by mealId)
-  const seenIds = new Set();
-  const allSuggestions = [];
-  for (const s of suggestions) {
-    const id = s.id || s.mealId;
-    if (!seenIds.has(id)) {
-      seenIds.add(id);
-      allSuggestions.push({ ...s, mealId: id, source: 'rule' });
-    }
-  }
-  for (const s of aiSuggestions) {
-    const id = s.id || s.mealId;
-    if (!seenIds.has(id)) {
-      seenIds.add(id);
-      allSuggestions.push({ ...s, mealId: id, source: 'ai' });
-    }
-  }
+  const allSuggestions = suggestions.map((s) => ({
+    ...s,
+    mealId: s.id || s.mealId,
+  }));
 
   function handleAddNewDish() {
     const name = newDishName.trim();
@@ -140,11 +112,6 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
                   <span className="text-base">{TYPE_ICONS[s.type]}</span>
                 )}
                 <span className="font-medium text-sm text-amber-900 flex-1">{s.name}</span>
-                {s.source === 'ai' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-600 font-medium">
-                    AI
-                  </span>
-                )}
                 {s.base && (
                   <span className="text-[10px] text-amber-400 capitalize">{s.base}</span>
                 )}
@@ -154,13 +121,6 @@ function SwapModal({ day, mealType, currentPlan, masterMeals, onSelect, onClose,
               )}
             </button>
           ))}
-
-          {aiLoading && !loading && (
-            <div className="flex items-center gap-2 text-xs text-purple-400 py-2 justify-center">
-              <div className="animate-spin w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full" />
-              Loading AI suggestions...
-            </div>
-          )}
         </div>
 
         {/* Add new dish inline */}

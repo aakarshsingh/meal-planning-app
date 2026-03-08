@@ -233,12 +233,17 @@ meal-planner/
 6. Fruit: rotate, no same fruit on consecutive days
 7. Fallback to Claude API if rule-based engine can't fill all slots
 
-## Claude API Usage Points
+## Claude API Usage — Max 2 Calls Per Session
 
-1. **Plan generation**: Send master meals + leftovers + preferences + last 2 weeks → get full week plan as JSON
-2. **Swap suggestions**: Send current slot context → get 5 alternatives with reasoning
-3. **Grocery optimization**: Send grocery list → get bulk buy tips, missing staples, skip suggestions
-4. Always fall back to rule-based engine if API fails
+API calls are budgeted to avoid spam and save costs:
+
+1. **Plan generation** (Screen 3 load): Single call to `/api/ai/generate-plan`. Returns a full AI plan used for:
+   - "Use AI Plan" banner to replace the rule-based plan
+   - AI-only meal IDs shown as purple "AI Picks" in the suggestion tray
+   - If the call fails, a subtle "AI suggestions unavailable" message appears (no error toast)
+2. **Grocery optimization** (user-triggered): Manual "Optimize with AI" button on the grocery list calls `/api/ai/optimize-grocery`
+3. **Swap modal**: Rule-based suggestions only — NO AI call per swap
+4. Always fall back to rule-based engine if API fails — never block the user
 
 ## UI Flow
 

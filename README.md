@@ -14,12 +14,12 @@
 ## Features
 
 - **Master meal library** — 9 breakfasts, 22 lunch/dinner meals, 6 fruits seeded from ~6 months of real meal plans
-- **3-screen planning flow** — Leftovers → Preferences → Drag-and-drop weekly grid
+- **3-screen planning flow** — Pantry Stock → Preferences → Drag-and-drop weekly grid
 - **Drag & drop meal grid** — Swap meals between slots, drag from suggestion tray, drag out to remove
 - **Breakfast auto-rotation** with manual override
 - **Fruit row** in the grid (separate from meals)
 - **Smart suggestions** — No repeats within the week, avoids last 2 weeks' history, uses leftovers first
-- **Claude AI integration** — Swap suggestions, initial plan generation, grocery optimization
+- **Claude AI integration** — Plan generation + AI picks in tray (1 call), grocery optimization (1 call). Max 2 API calls per session. Subtle failure handling
 - **Grocery list builder** — Calculates quantities from planned meals, subtracts leftovers, groups by category
 - **Copyable outputs** — Day-wise meal chart + grocery list as WhatsApp-friendly text
 - **History tracking** — Saves finalized weeks, learns over time
@@ -68,7 +68,7 @@ meal-planner/
 ├── src/
 │   ├── App.jsx                  # 3-step wizard with auto-save, resume, validation
 │   └── components/
-│       ├── LeftoverInput.jsx    # Screen 1: autocomplete ingredient search, qty input
+│       ├── LeftoverInput.jsx    # Screen 1: pantry stock input, fraction support
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
 │       ├── MealGrid.jsx         # Screen 3: drag-and-drop weekly grid
 │       ├── MealCard.jsx         # Draggable meal tile with swap/remove/qty buttons
@@ -84,8 +84,8 @@ meal-planner/
 
 ## Screens
 
-### Screen 1 — Leftover Input
-Autocomplete from ingredient master. Enter quantities of leftover groceries from last week. These become constraints — use expiring items first.
+### Screen 1 — Pantry Stock
+Autocomplete from ingredient master. Enter quantities of ingredients you have in stock (supports fractions like 1/2 bunch). These become constraints — use available items first.
 
 ### Screen 2 — Week Preferences
 - Skip specific days or meals (e.g., "eating out Wednesday dinner")
@@ -121,7 +121,7 @@ Priority layers:
 3. History — avoid last 2 weeks' meals
 4. Variety — mix rice/paratha/roti bases across the week
 5. Chicken — target 2 chicken dishes per week
-6. AI layer — Claude API for creative suggestions and swap options
+6. AI layer — Single Claude API call on Screen 3 load for alternative plan + "AI Picks" in tray
 ```
 
 ## Setup

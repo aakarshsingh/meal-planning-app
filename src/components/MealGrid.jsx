@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -72,7 +72,6 @@ function TrashZone() {
   );
 }
 
-// Draggable wrapper for tray items (not sortable — just draggable)
 function DraggableTrayItem({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
 
@@ -93,7 +92,8 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiPlan, setAiPlan] = useState(null);
-  const [aiLoading, setAiLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiFailed, setAiFailed] = useState(false);
   const [activeDragId, setActiveDragId] = useState(null);
   const [swapTarget, setSwapTarget] = useState(null);
   const [quantities, setQuantities] = useState({});
@@ -114,10 +114,30 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       .catch(() => {});
   }, []);
 
-  // Generate plan on mount
+  // Generate plan on mount — ONE AI call here (the only AI call on Screen 3 load)
   useEffect(() => {
     if (plan) {
       setLoading(false);
+      // Still fire AI call for alternative suggestions even when resuming
+      if (!aiPlan && !aiFailed) {
+        setAiLoading(true);
+        fetch('/api/ai/generate-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leftovers, preferences }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.plan && data.source === 'ai') {
+              setAiPlan(data.plan);
+            }
+            setAiLoading(false);
+          })
+          .catch(() => {
+            setAiLoading(false);
+            setAiFailed(true);
+          });
+      }
       return;
     }
     setLoading(true);
@@ -136,7 +156,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         toastRef?.current?.error('Failed to generate meal plan');
       });
 
-    // AI plan (async enhancement)
+    // AI plan (async, single call)
     setAiLoading(true);
     fetch('/api/ai/generate-plan', {
       method: 'POST',
@@ -150,7 +170,10 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         }
         setAiLoading(false);
       })
-      .catch(() => setAiLoading(false));
+      .catch(() => {
+        setAiLoading(false);
+        setAiFailed(true);
+      });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const findMeal = useCallback(
@@ -170,15 +193,12 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
     return skipMeals.some((s) => s.day === day && s.mealType === mealType);
   }
 
-  // Parse drag ID: "cell-Monday-lunch" or "tray-meal-04"
   function parseDragId(dragId) {
     if (!dragId) return null;
     if (typeof dragId !== 'string') return null;
     if (dragId.startsWith('cell-')) {
       const parts = dragId.split('-');
-      const day = parts[1];
-      const mealType = parts[2];
-      return { type: 'cell', day, mealType };
+      return { type: 'cell', day: parts[1], mealType: parts[2] };
     }
     if (dragId.startsWith('tray-')) {
       return { type: 'tray', mealId: dragId.slice(5) };
@@ -188,9 +208,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
 
   function getMealIdFromSlot(day, mealType) {
     if (!plan || !plan[day]) return null;
-    if (mealType === 'fruit') {
-      return plan[day].fruit?.[0] || null;
-    }
+    if (mealType === 'fruit') return plan[day].fruit?.[0] || null;
     return plan[day][mealType];
   }
 
@@ -206,7 +224,6 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
     const source = parseDragId(active.id);
     if (!source) return;
 
-    // Dropped on trash
     if (over.id === 'trash-zone') {
       if (source.type === 'cell') {
         const newPlan = { ...plan };
@@ -221,19 +238,15 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
       return;
     }
 
-    // Dropped on a cell
     const targetId = typeof over.id === 'string' ? over.id : '';
     const target = parseDragId(targetId);
     if (!target || target.type !== 'cell') return;
     if (isSlotSkipped(target.day, target.mealType)) return;
 
     const newPlan = { ...plan };
-    for (const d of DAYS) {
-      newPlan[d] = { ...newPlan[d] };
-    }
+    for (const d of DAYS) newPlan[d] = { ...newPlan[d] };
 
     if (source.type === 'tray') {
-      // Replace target cell with tray meal
       if (target.mealType === 'fruit') {
         const current = newPlan[target.day].fruit || [];
         if (current.length < 2 && !current.includes(source.mealId)) {
@@ -245,7 +258,6 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         newPlan[target.day][target.mealType] = source.mealId;
       }
     } else if (source.type === 'cell') {
-      // Swap the two cells
       if (source.mealType === 'fruit' && target.mealType === 'fruit') {
         const temp = newPlan[source.day].fruit;
         newPlan[source.day].fruit = newPlan[target.day].fruit;
@@ -296,9 +308,6 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   }
 
   function handleBaseChange(day, mealType, mealId, newBase) {
-    // Base change: find the meal, update in plan as a custom override
-    // We store base overrides separately since we can't modify master data per-cell
-    // For now, we'll just show a toast — the base is mainly informational
     toastRef?.current?.info(`Base changed to ${newBase} (visual only — meal stays the same)`);
   }
 
@@ -363,6 +372,31 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   const trayMeals = masterMeals?.meals?.filter((m) => !usedMealIds.has(m.id)) || [];
   const trayFruits = masterMeals?.fruits?.filter((f) => !usedMealIds.has(f.id)) || [];
 
+  // Extract AI-only suggestions: meals in the AI plan that differ from the current plan
+  const aiSuggestionMeals = useMemo(() => {
+    if (!aiPlan || !masterMeals || !plan) return [];
+    const aiMealIds = new Set();
+    const currentMealIds = new Set();
+
+    for (const day of DAYS) {
+      if (plan[day]) {
+        if (plan[day].lunch) currentMealIds.add(plan[day].lunch);
+        if (plan[day].dinner) currentMealIds.add(plan[day].dinner);
+      }
+      if (aiPlan[day]) {
+        if (aiPlan[day].lunch) aiMealIds.add(aiPlan[day].lunch);
+        if (aiPlan[day].dinner) aiMealIds.add(aiPlan[day].dinner);
+      }
+    }
+
+    // Meals the AI picked that aren't in the current plan
+    const uniqueAiIds = [...aiMealIds].filter((id) => !currentMealIds.has(id) && !usedMealIds.has(id));
+    return uniqueAiIds
+      .map((id) => findMeal(id))
+      .filter(Boolean)
+      .slice(0, 5); // Show max 5 AI suggestions
+  }, [aiPlan, plan, masterMeals, usedMealIds, findMeal]);
+
   // Active drag overlay
   const activeDragSource = parseDragId(activeDragId);
   let activeDragMeal = null;
@@ -394,19 +428,27 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         {/* AI plan banner */}
         {aiPlan && (
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
-            <p className="text-sm text-purple-700">AI-generated plan available</p>
+            <div>
+              <p className="text-sm text-purple-700 font-medium">AI-generated plan available</p>
+              <p className="text-xs text-purple-400 mt-0.5">Replace current plan with AI's suggestion</p>
+            </div>
             <button
               onClick={useAiPlan}
-              className="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-purple-500 text-white text-sm font-medium hover:bg-purple-600 transition-colors shrink-0"
             >
-              Use AI suggestion
+              Use AI Plan
             </button>
           </div>
         )}
         {aiLoading && (
-          <div className="flex items-center gap-2 text-xs text-purple-400 justify-center">
-            <div className="animate-spin w-4 h-4 border-2 border-purple-200 border-t-purple-500 rounded-full" />
-            Generating AI plan...
+          <div className="flex items-center gap-2 text-xs text-purple-400 justify-center py-1">
+            <div className="animate-spin w-3.5 h-3.5 border-2 border-purple-200 border-t-purple-500 rounded-full" />
+            AI is thinking...
+          </div>
+        )}
+        {aiFailed && !aiLoading && (
+          <div className="text-center text-xs text-gray-400 py-1">
+            AI suggestions unavailable — using rule-based plan
           </div>
         )}
 
@@ -527,11 +569,30 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
                 </button>
               </div>
 
-              {trayMeals.length === 0 && trayFruits.length === 0 ? (
+              {/* AI-suggested meals (purple block) */}
+              {aiSuggestionMeals.length > 0 && (
+                <>
+                  <div className="mb-1.5">
+                    <span className="text-[10px] text-purple-500 uppercase font-medium">AI Picks</span>
+                  </div>
+                  <div className="space-y-1.5 mb-3">
+                    {aiSuggestionMeals.map((m) => (
+                      <DraggableTrayItem key={`ai-${m.id}`} id={`tray-${m.id}`}>
+                        <TrayChip meal={m} aiPick />
+                      </DraggableTrayItem>
+                    ))}
+                  </div>
+                  <div className="border-t border-amber-100 pt-1.5 mb-1.5">
+                    <span className="text-[10px] text-amber-400 uppercase font-medium">Other Meals</span>
+                  </div>
+                </>
+              )}
+
+              {trayMeals.length === 0 && trayFruits.length === 0 && aiSuggestionMeals.length === 0 ? (
                 <p className="text-xs text-amber-300 text-center py-4">All meals planned!</p>
               ) : (
                 <div className="space-y-1.5">
-                  {trayMeals.map((m) => (
+                  {trayMeals.filter((m) => !aiSuggestionMeals.some((ai) => ai.id === m.id)).map((m) => (
                     <DraggableTrayItem key={m.id} id={`tray-${m.id}`}>
                       <TrayChip meal={m} />
                     </DraggableTrayItem>
@@ -555,29 +616,43 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         </div>
 
         {/* Suggestion tray (mobile — below grid) */}
-        {(trayMeals.length > 0 || trayFruits.length > 0) && (
-          <div className="lg:hidden bg-white rounded-xl border border-amber-100 shadow-sm p-3">
-            <h3 className="text-xs font-semibold text-amber-700 mb-2">Available Meals</h3>
-            {/* Quick add on mobile too */}
-            <div className="flex gap-1 mb-2">
-              <input
-                type="text"
-                value={quickAddText}
-                onChange={(e) => setQuickAddText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
-                placeholder="Add new dish..."
-                className="flex-1 min-w-0 px-2 py-1 text-xs rounded border border-amber-200 focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-900 placeholder-amber-300"
-              />
-              <button
-                onClick={handleQuickAdd}
-                disabled={!quickAddText.trim() || quickAddSaving}
-                className="px-2 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors shrink-0"
-              >
-                + Add
-              </button>
+        <div className="lg:hidden bg-white rounded-xl border border-amber-100 shadow-sm p-3">
+          <h3 className="text-xs font-semibold text-amber-700 mb-2">Available Meals</h3>
+          <div className="flex gap-1 mb-2">
+            <input
+              type="text"
+              value={quickAddText}
+              onChange={(e) => setQuickAddText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+              placeholder="Add new dish..."
+              className="flex-1 min-w-0 px-2 py-1 text-xs rounded border border-amber-200 focus:outline-none focus:ring-1 focus:ring-amber-400 text-amber-900 placeholder-amber-300"
+            />
+            <button
+              onClick={handleQuickAdd}
+              disabled={!quickAddText.trim() || quickAddSaving}
+              className="px-2 py-1 text-xs rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-40 transition-colors shrink-0"
+            >
+              + Add
+            </button>
+          </div>
+
+          {/* AI picks on mobile */}
+          {aiSuggestionMeals.length > 0 && (
+            <div className="mb-2">
+              <span className="text-[10px] text-purple-500 uppercase font-medium">AI Picks</span>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {aiSuggestionMeals.map((m) => (
+                  <DraggableTrayItem key={`ai-${m.id}`} id={`tray-${m.id}`}>
+                    <TrayChip meal={m} aiPick />
+                  </DraggableTrayItem>
+                ))}
+              </div>
             </div>
+          )}
+
+          {(trayMeals.length > 0 || trayFruits.length > 0) && (
             <div className="flex flex-wrap gap-1.5">
-              {trayMeals.map((m) => (
+              {trayMeals.filter((m) => !aiSuggestionMeals.some((ai) => ai.id === m.id)).map((m) => (
                 <DraggableTrayItem key={m.id} id={`tray-${m.id}`}>
                   <TrayChip meal={m} />
                 </DraggableTrayItem>
@@ -588,8 +663,12 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
                 </DraggableTrayItem>
               ))}
             </div>
-          </div>
-        )}
+          )}
+
+          {trayMeals.length === 0 && trayFruits.length === 0 && aiSuggestionMeals.length === 0 && (
+            <p className="text-xs text-amber-300 text-center py-2">All meals planned!</p>
+          )}
+        </div>
 
         {/* Trash zone */}
         <TrashZone />
@@ -614,7 +693,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
         ) : null}
       </DragOverlay>
 
-      {/* Swap modal */}
+      {/* Swap modal — rule-based only, no AI call */}
       {swapTarget && (
         <SwapModal
           day={swapTarget.day}
@@ -630,8 +709,8 @@ function MealGrid({ leftovers, preferences, plan, setPlan, onBack, toastRef }) {
   );
 }
 
-// Simple tray chip — not using MealCard/useSortable to avoid drag issues
-function TrayChip({ meal }) {
+// Tray chip with optional AI pick styling
+function TrayChip({ meal, aiPick }) {
   const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
   const isFruit = meal.type === 'fruit';
   const isChicken = meal.type === 'chicken';
@@ -643,13 +722,15 @@ function TrayChip({ meal }) {
   return (
     <div
       className={`px-2 py-1.5 rounded border text-xs cursor-grab active:cursor-grabbing truncate select-none ${
-        isFruit
-          ? 'bg-green-50 border-green-200 text-green-800'
-          : isChicken
-            ? 'bg-orange-50 border-orange-200 text-orange-800'
-            : isEgg
-              ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
-              : 'bg-amber-50 border-amber-200 text-amber-800'
+        aiPick
+          ? 'bg-purple-50 border-purple-200 text-purple-800'
+          : isFruit
+            ? 'bg-green-50 border-green-200 text-green-800'
+            : isChicken
+              ? 'bg-orange-50 border-orange-200 text-orange-800'
+              : isEgg
+                ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
       }`}
     >
       {icon ? `${icon} ` : ''}{meal.name}
