@@ -51,10 +51,13 @@ function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quant
     const slotKey = `${day}-${slot}`;
     const base = baseOverrides[slotKey] ?? meal.base;
 
-    // Build name with base
+    // Build name with base (skip if base already in meal name)
     let name = meal.name;
     if (base && base !== 'none') {
-      name = `${meal.name} + ${BASE_LABELS[base] || base}`;
+      const baseLabel = BASE_LABELS[base] || base;
+      if (!meal.name.toLowerCase().includes(baseLabel.toLowerCase())) {
+        name = `${meal.name} + ${baseLabel}`;
+      }
     }
 
     // Use overridden qty for countable items

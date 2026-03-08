@@ -36,8 +36,11 @@ function isCountable(meal) {
 
 function formatTitle(meal) {
   if (!meal.base || meal.base === 'none') return meal.name;
-  // "Palak Paneer + Roti" style
-  return `${meal.name} + ${BASE_LABELS[meal.base] || meal.base}`;
+  const baseLabel = BASE_LABELS[meal.base] || meal.base;
+  // Don't append base if already in the meal name (e.g., "Palak Paneer + Paratha")
+  const nameLower = meal.name.toLowerCase();
+  if (nameLower.includes(baseLabel.toLowerCase())) return meal.name;
+  return `${meal.name} + ${baseLabel}`;
 }
 
 function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
