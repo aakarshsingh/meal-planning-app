@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/index.js",
-    "client": "vite --port 3000"
+    "client": "vite --port 3000 --open",
+    "start": "npm run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
