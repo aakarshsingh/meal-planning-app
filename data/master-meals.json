@@ -129,7 +129,7 @@
     },
     {
       "id": "bf-05",
-      "name": "Omlette + Bread",
+      "name": "Omlette",
       "defaultQty": 2,
       "unit": "pieces",
       "accompaniment": "Coffee",
@@ -158,7 +158,7 @@
     },
     {
       "id": "bf-06",
-      "name": "Half Boiled Egg + Toast",
+      "name": "Half Boiled Egg",
       "defaultQty": 2,
       "unit": "pieces",
       "accompaniment": "Coffee",
@@ -220,7 +220,7 @@
     },
     {
       "id": "bf-09",
-      "name": "Aloo Poori",
+      "name": "Aloo Subzi",
       "defaultQty": 4,
       "unit": "pieces",
       "accompaniment": "Coffee",
@@ -241,15 +241,29 @@
           "unit": "ml"
         }
       ]
+    },
+    {
+      "id": "bf-10",
+      "name": "Toasted Bread",
+      "defaultQty": 2,
+      "unit": "nos",
+      "ingredients": []
+    },
+    {
+      "id": "bf-11",
+      "name": "Poori",
+      "defaultQty": 2,
+      "unit": "nos",
+      "ingredients": []
     }
   ],
   "meals": [
     {
       "id": "meal-01",
-      "name": "Kadhi Chawal",
+      "name": "Kadhi",
       "type": "veg",
       "slot": "flexible",
-      "base": "none",
+      "base": "rice",
       "ingredients": [
         {
           "ingredientId": "ing-curd",
@@ -278,7 +292,7 @@
       "name": "Paneer Paratha",
       "type": "veg",
       "slot": "flexible",
-      "base": "paratha",
+      "base": "none",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -308,7 +322,7 @@
       "name": "Egg Rolls",
       "type": "egg",
       "slot": "flexible",
-      "base": "roti",
+      "base": "none",
       "defaultQty": 2,
       "accompaniments": "Onion, Carrot, Beans",
       "ingredients": [
@@ -341,7 +355,7 @@
     },
     {
       "id": "meal-04",
-      "name": "Palak Paneer + Paratha",
+      "name": "Palak Paneer",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -381,10 +395,11 @@
     },
     {
       "id": "meal-05",
-      "name": "Bhindi + Yellow Daal + Roti",
+      "name": "Bhindi + Yellow Dal",
       "type": "veg",
       "slot": "flexible",
       "base": "roti",
+      "suggestedSide": "side-01",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -460,7 +475,7 @@
     },
     {
       "id": "meal-07",
-      "name": "Chicken Gravy + Paratha",
+      "name": "Chicken Brown Gravy",
       "type": "chicken",
       "slot": "flexible",
       "base": "paratha",
@@ -500,10 +515,11 @@
     },
     {
       "id": "meal-08",
-      "name": "Aloo Matar + Paratha",
+      "name": "Aloo Matar",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
+      "suggestedSide": "side-01",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -539,6 +555,7 @@
       "type": "veg",
       "slot": "flexible",
       "base": "none",
+      "suggestedSide": "side-02",
       "ingredients": [
         {
           "ingredientId": "ing-rice",
@@ -574,10 +591,10 @@
     },
     {
       "id": "meal-10",
-      "name": "Rajma + Rice",
+      "name": "Rajma",
       "type": "veg",
       "slot": "flexible",
-      "base": "none",
+      "base": "rice",
       "ingredients": [
         {
           "ingredientId": "ing-rajma",
@@ -608,10 +625,10 @@
     },
     {
       "id": "meal-11",
-      "name": "Laal Channai + Rice",
+      "name": "Lal Channa",
       "type": "veg",
       "slot": "flexible",
-      "base": "none",
+      "base": "rice",
       "ingredients": [
         {
           "ingredientId": "ing-laal-chana",
@@ -642,10 +659,10 @@
     },
     {
       "id": "meal-12",
-      "name": "Pav Bhaji",
+      "name": "Bhaji",
       "type": "veg",
       "slot": "flexible",
-      "base": "none",
+      "base": "pav",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -682,7 +699,7 @@
     },
     {
       "id": "meal-13",
-      "name": "Matar Paneer + Paratha",
+      "name": "Matar Paneer",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -722,7 +739,7 @@
     },
     {
       "id": "meal-14",
-      "name": "Palak Egg Bhurji + Roti",
+      "name": "Palak Egg Bhurji",
       "type": "egg",
       "slot": "flexible",
       "base": "roti",
@@ -757,10 +774,10 @@
     },
     {
       "id": "meal-15",
-      "name": "White Channai + Rice",
+      "name": "White Channa",
       "type": "veg",
       "slot": "flexible",
-      "base": "none",
+      "base": "rice",
       "ingredients": [
         {
           "ingredientId": "ing-white-chana",
@@ -791,10 +808,11 @@
     },
     {
       "id": "meal-16",
-      "name": "Aloo Gobi + Yellow Daal + Paratha",
+      "name": "Aloo Gobi + Yellow Daal",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
+      "suggestedSide": "side-01",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -831,7 +849,7 @@
     },
     {
       "id": "meal-17",
-      "name": "Mushroom Masala + Paratha",
+      "name": "Mushroom Masala",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -866,7 +884,7 @@
     },
     {
       "id": "meal-18",
-      "name": "Noodles (Chings)",
+      "name": "Veg Noodles",
       "type": "veg",
       "slot": "dinner",
       "base": "none",
@@ -895,7 +913,7 @@
     },
     {
       "id": "meal-19",
-      "name": "Paneer Bhurji + Paratha",
+      "name": "Paneer Bhurji",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -935,10 +953,10 @@
     },
     {
       "id": "meal-20",
-      "name": "Aloo Paratha",
+      "name": "Aloo Parathas",
       "type": "veg",
       "slot": "flexible",
-      "base": "paratha",
+      "base": "none",
       "defaultQty": 2,
       "ingredients": [
         {
@@ -964,40 +982,12 @@
       ]
     },
     {
-      "id": "meal-21",
-      "name": "Curd + Pulao",
-      "type": "veg",
-      "slot": "flexible",
-      "base": "none",
-      "ingredients": [
-        {
-          "ingredientId": "ing-rice",
-          "qty": 200,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-curd",
-          "qty": 125,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-onion",
-          "qty": 50,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-carrot",
-          "qty": 50,
-          "unit": "g"
-        }
-      ]
-    },
-    {
       "id": "meal-22",
-      "name": "Daal + Aloo Beans + Paratha",
+      "name": "Aloo Beans + Yellow Dal",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
+      "suggestedSide": "side-01",
       "defaultQty": 4,
       "ingredients": [
         {
@@ -1034,26 +1024,10 @@
     },
     {
       "id": "meal-23",
-      "name": "Biryani",
-      "type": "veg",
+      "name": "Chicken Gravy with Cream",
+      "type": "chicken",
       "slot": "flexible",
-      "base": "none",
-      "ingredients": []
-    },
-    {
-      "id": "meal-23",
-      "name": "XYZ",
-      "type": "veg",
-      "slot": "flexible",
-      "base": "rice",
-      "ingredients": []
-    },
-    {
-      "id": "meal-25",
-      "name": "XYZ",
-      "type": "veg",
-      "slot": "flexible",
-      "base": "rice",
+      "base": "paratha",
       "ingredients": []
     }
   ],
@@ -1099,6 +1073,25 @@
       "defaultQty": 1,
       "unit": "box",
       "season": "winter"
+    }
+  ],
+  "sides": [
+    {
+      "id": "side-01",
+      "name": "Yellow Dal",
+      "ingredients": [
+        { "ingredientId": "ing-dal", "qty": 100, "unit": "g" },
+        { "ingredientId": "ing-onion", "qty": 30, "unit": "g" },
+        { "ingredientId": "ing-tomato", "qty": 30, "unit": "g" }
+      ]
+    },
+    {
+      "id": "side-02",
+      "name": "Raita",
+      "ingredients": [
+        { "ingredientId": "ing-curd", "qty": 125, "unit": "g" },
+        { "ingredientId": "ing-onion", "qty": 20, "unit": "g" }
+      ]
     }
   ],
   "drinks": [

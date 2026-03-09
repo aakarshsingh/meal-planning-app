@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
 const TYPE_OPTIONS = [
@@ -6,7 +6,7 @@ const TYPE_OPTIONS = [
   { value: 'egg', label: 'Egg' },
   { value: 'chicken', label: 'Chicken' },
 ];
-const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles', 'none'];
+const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'none'];
 const SLOT_OPTIONS = [
   { value: 'flexible', label: 'Flexible' },
   { value: 'dinner', label: 'Dinner only' },
@@ -22,11 +22,14 @@ function ManageMealsModal({ onClose, toastRef }) {
     type: 'veg',
     slot: 'flexible',
     base: 'rice',
+    suggestedSide: '',
+    alsoAsMain: false,
   });
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const addNameRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/meals')
@@ -48,6 +51,8 @@ function ManageMealsModal({ onClose, toastRef }) {
           setDeleteConfirm(null);
         } else if (editingId) {
           setEditingId(null);
+        } else if (showAdd) {
+          setShowAdd(false);
         } else {
           onClose();
         }
@@ -55,7 +60,7 @@ function ManageMealsModal({ onClose, toastRef }) {
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose, editingId, deleteConfirm]);
+  }, [onClose, editingId, deleteConfirm, showAdd]);
 
   function getAllNames(excludeId) {
     return [
@@ -63,6 +68,7 @@ function ManageMealsModal({ onClose, toastRef }) {
       ...(masterMeals?.meals || []),
       ...(masterMeals?.drinks || []),
       ...(masterMeals?.fruits || []),
+      ...(masterMeals?.sides || []),
     ]
       .filter((m) => m.id !== excludeId)
       .map((m) => m.name.toLowerCase().trim());
@@ -75,6 +81,7 @@ function ManageMealsModal({ onClose, toastRef }) {
       type: item.type || 'veg',
       slot: item.slot || 'flexible',
       base: item.base ?? 'rice',
+      suggestedSide: item.suggestedSide || '',
       category,
     });
   }
@@ -82,7 +89,6 @@ function ManageMealsModal({ onClose, toastRef }) {
   function saveEdit() {
     if (!editingId || !editData.name?.trim()) return;
 
-    // Duplicate check
     if (getAllNames(editingId).includes(editData.name.trim().toLowerCase())) {
       toastRef.current?.error('A dish with this name already exists');
       return;
@@ -95,6 +101,7 @@ function ManageMealsModal({ onClose, toastRef }) {
       updates.type = editData.type;
       updates.slot = editData.slot;
       updates.base = editData.base;
+      updates.suggestedSide = editData.suggestedSide || undefined;
     }
 
     fetch(`/api/meals/${editingId}`, {
@@ -107,12 +114,12 @@ function ManageMealsModal({ onClose, toastRef }) {
         return r.json();
       })
       .then(() => {
-        // Update local state
         const updated = { ...masterMeals };
         let targetArray;
         if (editData.category === 'breakfast') targetArray = updated.breakfasts;
         else if (editData.category === 'fruit') targetArray = updated.fruits;
         else if (editData.category === 'drink') targetArray = updated.drinks;
+        else if (editData.category === 'side') targetArray = updated.sides;
         else targetArray = updated.meals;
 
         const idx = targetArray?.findIndex((m) => m.id === editingId);
@@ -143,6 +150,7 @@ function ManageMealsModal({ onClose, toastRef }) {
           meals: (prev.meals || []).filter((m) => m.id !== itemId),
           drinks: (prev.drinks || []).filter((m) => m.id !== itemId),
           fruits: (prev.fruits || []).filter((m) => m.id !== itemId),
+          sides: (prev.sides || []).filter((m) => m.id !== itemId),
         }));
         setDeleteConfirm(null);
         toastRef.current?.success('Removed');
@@ -153,10 +161,19 @@ function ManageMealsModal({ onClose, toastRef }) {
       });
   }
 
+  // Generate unique IDs by finding max existing number
+  function nextId(prefix, arr) {
+    let max = 0;
+    for (const item of arr || []) {
+      const match = item.id?.match(new RegExp(`^${prefix}(\\d+)$`));
+      if (match) max = Math.max(max, parseInt(match[1], 10));
+    }
+    return `${prefix}${String(max + 1).padStart(2, '0')}`;
+  }
+
   function handleAdd() {
     if (!newMeal.name.trim()) return;
 
-    // Duplicate check
     if (getAllNames().includes(newMeal.name.trim().toLowerCase())) {
       toastRef.current?.error(`"${newMeal.name.trim()}" already exists`);
       return;
@@ -166,25 +183,36 @@ function ManageMealsModal({ onClose, toastRef }) {
 
     let meal;
     if (addCategory === 'breakfast') {
-      const nextId = `bf-${String((masterMeals?.breakfasts?.length || 0) + 1).padStart(2, '0')}`;
-      meal = { id: nextId, name: newMeal.name.trim(), defaultQty: 2, unit: 'nos', ingredients: [] };
+      meal = { id: nextId('bf-', masterMeals?.breakfasts), name: newMeal.name.trim(), defaultQty: 2, unit: 'nos', ingredients: [] };
     } else if (addCategory === 'fruit') {
-      const nextId = `fruit-${String((masterMeals?.fruits?.length || 0) + 1).padStart(2, '0')}`;
-      meal = { id: nextId, name: newMeal.name.trim(), defaultQty: 2, unit: 'nos', season: 'all', ingredients: [] };
+      meal = { id: nextId('fruit-', masterMeals?.fruits), name: newMeal.name.trim(), defaultQty: 2, unit: 'nos', season: 'all', ingredients: [] };
     } else if (addCategory === 'drink') {
-      const nextId = `drink-${String(((masterMeals?.drinks || []).length || 0) + 1).padStart(2, '0')}`;
-      meal = { id: nextId, name: newMeal.name.trim(), ingredients: [] };
+      meal = { id: nextId('drink-', masterMeals?.drinks), name: newMeal.name.trim(), ingredients: [] };
+    } else if (addCategory === 'side') {
+      meal = { id: nextId('side-', masterMeals?.sides), name: newMeal.name.trim(), ingredients: [] };
     } else {
-      const nextId = `meal-${String((masterMeals?.meals?.length || 0) + 1).padStart(2, '0')}`;
       meal = {
-        id: nextId,
+        id: nextId('meal-', masterMeals?.meals),
         name: newMeal.name.trim(),
         type: newMeal.type,
         slot: newMeal.slot,
         base: newMeal.base,
+        suggestedSide: newMeal.suggestedSide || undefined,
         ingredients: [],
       };
     }
+
+    // Also create a main entry if "also as main" is checked for breakfast
+    const alsoMainMeal = (addCategory === 'breakfast' && newMeal.alsoAsMain)
+      ? {
+          id: nextId('meal-', masterMeals?.meals),
+          name: newMeal.name.trim(),
+          type: 'veg',
+          slot: 'flexible',
+          base: 'none',
+          ingredients: [],
+        }
+      : null;
 
     fetch('/api/meals', {
       method: 'POST',
@@ -192,25 +220,39 @@ function ManageMealsModal({ onClose, toastRef }) {
       body: JSON.stringify(meal),
     })
       .then((r) => {
-        if (r.status === 409) {
-          throw new Error('duplicate');
-        }
+        if (r.status === 409) throw new Error('duplicate');
         if (!r.ok) throw new Error('Failed');
         return r.json();
       })
-      .then(() => {
+      .then(async () => {
+        // If also adding as main, make a second API call
+        if (alsoMainMeal) {
+          try {
+            await fetch('/api/meals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(alsoMainMeal),
+            });
+          } catch {} // Silently skip if duplicate
+        }
+
         setMasterMeals((prev) => {
           const updated = { ...prev };
-          if (addCategory === 'breakfast') updated.breakfasts = [...(prev?.breakfasts || []), meal];
-          else if (addCategory === 'fruit') updated.fruits = [...(prev?.fruits || []), meal];
+          if (addCategory === 'breakfast') {
+            updated.breakfasts = [...(prev?.breakfasts || []), meal];
+            if (alsoMainMeal) updated.meals = [...(prev?.meals || []), alsoMainMeal];
+          } else if (addCategory === 'fruit') updated.fruits = [...(prev?.fruits || []), meal];
           else if (addCategory === 'drink') updated.drinks = [...(prev?.drinks || []), meal];
+          else if (addCategory === 'side') updated.sides = [...(prev?.sides || []), meal];
           else updated.meals = [...(prev?.meals || []), meal];
           return updated;
         });
-        setNewMeal({ name: '', type: 'veg', slot: 'flexible', base: 'rice' });
-        setShowAdd(false);
+        // Keep form open, reset name only so user can add more
+        setNewMeal((p) => ({ ...p, name: '', alsoAsMain: false, suggestedSide: '' }));
         setSaving(false);
         toastRef.current?.success(`Added "${meal.name}"`);
+        // Focus name input for next add
+        setTimeout(() => addNameRef.current?.focus(), 50);
       })
       .catch((err) => {
         setSaving(false);
@@ -224,6 +266,7 @@ function ManageMealsModal({ onClose, toastRef }) {
 
   function renderItem(item, category) {
     const isEditing = editingId === item.id;
+    const sides = masterMeals?.sides || [];
 
     if (isEditing) {
       return (
@@ -237,26 +280,40 @@ function ManageMealsModal({ onClose, toastRef }) {
             autoFocus
           />
           {category === 'meal' && (
-            <div className="flex gap-1">
-              <select
-                value={editData.type}
-                onChange={(e) => setEditData((p) => ({ ...p, type: e.target.value }))}
-                className="flex-1 px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
-              >
-                {TYPE_OPTIONS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-              <select
-                value={editData.base}
-                onChange={(e) => setEditData((p) => ({ ...p, base: e.target.value }))}
-                className="flex-1 px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
-              >
-                {BASE_OPTIONS.map((b) => (
-                  <option key={b} value={b}>{b === 'none' ? 'No base' : b}</option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="flex gap-1">
+                <select
+                  value={editData.type}
+                  onChange={(e) => setEditData((p) => ({ ...p, type: e.target.value }))}
+                  className="flex-1 px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={editData.base}
+                  onChange={(e) => setEditData((p) => ({ ...p, base: e.target.value }))}
+                  className="flex-1 px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
+                >
+                  {BASE_OPTIONS.map((b) => (
+                    <option key={b} value={b}>{b === 'none' ? 'No base' : b}</option>
+                  ))}
+                </select>
+              </div>
+              {sides.length > 0 && (
+                <select
+                  value={editData.suggestedSide || ''}
+                  onChange={(e) => setEditData((p) => ({ ...p, suggestedSide: e.target.value }))}
+                  className="w-full px-1 py-0.5 text-[10px] rounded border border-ink/15 text-ink"
+                >
+                  <option value="">No suggested side</option>
+                  {sides.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
+            </>
           )}
           <div className="flex gap-1 justify-end">
             <button onClick={() => setEditingId(null)} className="text-[10px] px-2 py-0.5 text-ink/50 hover:text-ink">Cancel</button>
@@ -268,6 +325,7 @@ function ManageMealsModal({ onClose, toastRef }) {
 
     const isMeal = category === 'meal';
     const icon = isMeal ? (TYPE_ICONS[item.type] || '') : '';
+    const sideInfo = isMeal && item.suggestedSide ? sides.find((s) => s.id === item.suggestedSide) : null;
 
     return (
       <div
@@ -281,6 +339,7 @@ function ManageMealsModal({ onClose, toastRef }) {
           title="Click to edit"
         >
           {item.name}
+          {sideInfo && <span className="text-[9px] text-ink/35 ml-1">+ {sideInfo.name}</span>}
         </span>
         {isMeal && item.base && item.base !== 'none' && <span className="text-[10px] text-ink/40 capitalize shrink-0">{item.base}</span>}
         <button
@@ -294,8 +353,10 @@ function ManageMealsModal({ onClose, toastRef }) {
     );
   }
 
+  const sides = masterMeals?.sides || [];
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div
         className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -341,6 +402,18 @@ function ManageMealsModal({ onClose, toastRef }) {
                 {masterMeals?.meals?.map((m) => renderItem(m, 'meal'))}
               </div>
 
+              {/* Sides */}
+              <h4 className="text-xs font-semibold text-primary uppercase mb-2">
+                Sides ({sides.length})
+              </h4>
+              <div className="grid grid-cols-2 gap-1 mb-4">
+                {sides.length > 0 ? (
+                  sides.map((s) => renderItem(s, 'side'))
+                ) : (
+                  <p className="text-xs text-ink/30 col-span-2">No sides yet. Add one below.</p>
+                )}
+              </div>
+
               {/* Fruits */}
               <h4 className="text-xs font-semibold text-primary uppercase mb-2">
                 Fruits ({masterMeals?.fruits?.length || 0})
@@ -354,10 +427,11 @@ function ManageMealsModal({ onClose, toastRef }) {
                 <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary-light/50">
                   <h4 className="text-sm font-semibold text-ink">Add New Item</h4>
 
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     {[
                       { value: 'meal', label: 'Main' },
                       { value: 'breakfast', label: 'Breakfast' },
+                      { value: 'side', label: 'Side' },
                       { value: 'drink', label: 'Drink' },
                       { value: 'fruit', label: 'Fruit' },
                     ].map((cat) => (
@@ -376,6 +450,7 @@ function ManageMealsModal({ onClose, toastRef }) {
                   </div>
 
                   <input
+                    ref={addNameRef}
                     type="text"
                     placeholder="Name"
                     value={newMeal.name}
@@ -386,35 +461,61 @@ function ManageMealsModal({ onClose, toastRef }) {
                   />
 
                   {addCategory === 'meal' && (
-                    <div className="flex gap-2">
-                      <select
-                        value={newMeal.type}
-                        onChange={(e) => setNewMeal((p) => ({ ...p, type: e.target.value }))}
-                        className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
-                      >
-                        {TYPE_OPTIONS.map((t) => (
-                          <option key={t.value} value={t.value}>{t.label}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={newMeal.slot}
-                        onChange={(e) => setNewMeal((p) => ({ ...p, slot: e.target.value }))}
-                        className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
-                      >
-                        {SLOT_OPTIONS.map((s) => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={newMeal.base}
-                        onChange={(e) => setNewMeal((p) => ({ ...p, base: e.target.value }))}
-                        className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
-                      >
-                        {BASE_OPTIONS.map((b) => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <>
+                      <div className="flex gap-2">
+                        <select
+                          value={newMeal.type}
+                          onChange={(e) => setNewMeal((p) => ({ ...p, type: e.target.value }))}
+                          className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
+                        >
+                          {TYPE_OPTIONS.map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={newMeal.slot}
+                          onChange={(e) => setNewMeal((p) => ({ ...p, slot: e.target.value }))}
+                          className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
+                        >
+                          {SLOT_OPTIONS.map((s) => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={newMeal.base}
+                          onChange={(e) => setNewMeal((p) => ({ ...p, base: e.target.value }))}
+                          className="flex-1 px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
+                        >
+                          {BASE_OPTIONS.map((b) => (
+                            <option key={b} value={b}>{b === 'none' ? 'No base' : b}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {sides.length > 0 && (
+                        <select
+                          value={newMeal.suggestedSide || ''}
+                          onChange={(e) => setNewMeal((p) => ({ ...p, suggestedSide: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-sm border border-ink/15 rounded-lg text-ink"
+                        >
+                          <option value="">No suggested side</option>
+                          {sides.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      )}
+                    </>
+                  )}
+
+                  {addCategory === 'breakfast' && (
+                    <label className="flex items-center gap-2 text-xs text-ink/70 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={newMeal.alsoAsMain}
+                        onChange={(e) => setNewMeal((p) => ({ ...p, alsoAsMain: e.target.checked }))}
+                        className="rounded border-ink/20 text-primary focus:ring-primary"
+                      />
+                      Also add to Mains (can use in lunch/dinner)
+                    </label>
                   )}
 
                   <div className="flex gap-2 justify-end">
@@ -422,7 +523,7 @@ function ManageMealsModal({ onClose, toastRef }) {
                       onClick={() => setShowAdd(false)}
                       className="px-3 py-1.5 text-sm text-ink/60 hover:bg-cream rounded-lg transition-colors"
                     >
-                      Cancel
+                      Done
                     </button>
                     <button
                       onClick={handleAdd}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', noodles: 'Noodles', none: '' };
+const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', none: '' };
 const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 
 function CopyButton({ text, label }) {
@@ -39,7 +39,8 @@ function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quant
       masterMeals.breakfasts?.find((b) => b.id === mealId) ||
       masterMeals.meals?.find((m) => m.id === mealId) ||
       (masterMeals.drinks || []).find((d) => d.id === mealId) ||
-      masterMeals.fruits?.find((f) => f.id === mealId)
+      masterMeals.fruits?.find((f) => f.id === mealId) ||
+      (masterMeals.sides || []).find((s) => s.id === mealId)
     );
   }
 

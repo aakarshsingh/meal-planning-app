@@ -22,19 +22,18 @@ const DRINK_ICONS = {
   'Nimbu Pani': '\u{1F34B}',
 };
 
-function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, onBack, toastRef }) {
+function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, aiPlanCache, setAiPlanCache, aiOverrideUsed, setAiOverrideUsed, freshAiSuggestions, setFreshAiSuggestions, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [aiPlan, setAiPlan] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFailed, setAiFailed] = useState(false);
-  const [aiOverrideUsed, setAiOverrideUsed] = useState(false);
-  const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
   const [swapTarget, setSwapTarget] = useState(null);
   // Track which day-slot combos were placed by AI (e.g. "Monday-lunch")
   const [aiPlacedSlots, setAiPlacedSlots] = useState(new Set());
   const initialPlanRef = useRef(null);
-  const aiPlanLoadedRef = useRef(false);
+  // Drag-and-drop state
+  const [dragSource, setDragSource] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
 
   const { skipDays = [], skipMeals = [] } = preferences;
 
@@ -134,14 +133,13 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     return merged;
   }
 
-  // Generate plan on mount
+  // Generate plan on mount — AI call only once, cached in App.jsx
   useEffect(() => {
     if (plan) {
       setLoading(false);
       if (!initialPlanRef.current) initialPlanRef.current = JSON.parse(JSON.stringify(plan));
-      // Only call AI once, skip if already loaded or failed
-      if (!aiPlanLoadedRef.current && !aiFailed && !allSkipped) {
-        aiPlanLoadedRef.current = true;
+      // Skip AI if already cached (e.g. coming back from Review)
+      if (!aiPlanCache && !aiFailed && !allSkipped) {
         setAiLoading(true);
         fetch('/api/ai/generate-plan', {
           method: 'POST',
@@ -154,7 +152,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
           })
           .then((data) => {
             if (data.plan && data.source === 'ai') {
-              setAiPlan(data.plan);
+              setAiPlanCache(data.plan);
               setPlan((prev) => mergeAiPlan(prev, data.plan));
               toastRef?.current?.success('AI enhanced your plan!');
             } else if (data.source === 'rule-based') {
@@ -198,32 +196,33 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
         toastRef?.current?.error('Failed to generate meal plan');
       });
 
-    aiPlanLoadedRef.current = true;
-    setAiLoading(true);
-    fetch('/api/ai/generate-plan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leftovers, preferences }),
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error(`AI API returned ${r.status}`);
-        return r.json();
+    if (!aiPlanCache) {
+      setAiLoading(true);
+      fetch('/api/ai/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leftovers, preferences }),
       })
-      .then((data) => {
-        if (data.plan && data.source === 'ai') {
-          setAiPlan(data.plan);
-          setPlan((prev) => mergeAiPlan(prev, data.plan));
-          toastRef?.current?.success('AI enhanced your plan!');
-        } else if (data.source === 'rule-based') {
-          console.warn('AI generation fell back to rule-based on server');
-        }
-        setAiLoading(false);
-      })
-      .catch((err) => {
-        console.error('AI plan call failed:', err);
-        setAiLoading(false);
-        setAiFailed(true);
-      });
+        .then((r) => {
+          if (!r.ok) throw new Error(`AI API returned ${r.status}`);
+          return r.json();
+        })
+        .then((data) => {
+          if (data.plan && data.source === 'ai') {
+            setAiPlanCache(data.plan);
+            setPlan((prev) => mergeAiPlan(prev, data.plan));
+            toastRef?.current?.success('AI enhanced your plan!');
+          } else if (data.source === 'rule-based') {
+            console.warn('AI generation fell back to rule-based on server');
+          }
+          setAiLoading(false);
+        })
+        .catch((err) => {
+          console.error('AI plan call failed:', err);
+          setAiLoading(false);
+          setAiFailed(true);
+        });
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const findMeal = useCallback(
@@ -233,7 +232,8 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
         masterMeals.breakfasts?.find((b) => b.id === mealId) ||
         masterMeals.meals?.find((m) => m.id === mealId) ||
         (masterMeals.drinks || []).find((d) => d.id === mealId) ||
-        masterMeals.fruits?.find((f) => f.id === mealId)
+        masterMeals.fruits?.find((f) => f.id === mealId) ||
+        (masterMeals.sides || []).find((s) => s.id === mealId)
       );
     },
     [masterMeals]
@@ -274,28 +274,24 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
       const category = getMealCategory(mealId);
       if (category === 'breakfast') {
         const current = Array.isArray(newPlan[day].breakfast) ? newPlan[day].breakfast : [];
-        if (current.length < 2) {
+        if (!current.includes(mealId)) {
           newPlan[day].breakfast = [...current, mealId];
-        } else {
-          newPlan[day].breakfast = [mealId];
         }
       } else if (category === 'drinks') {
         const current = Array.isArray(newPlan[day].drinks) ? newPlan[day].drinks : [];
-        if (current.length < 2) {
+        if (!current.includes(mealId)) {
           newPlan[day].drinks = [...current, mealId];
-        } else {
-          newPlan[day].drinks = [mealId];
         }
       } else {
         const current = Array.isArray(newPlan[day].breakfast) ? newPlan[day].breakfast : [];
-        newPlan[day].breakfast = [...current, mealId];
+        if (!current.includes(mealId)) {
+          newPlan[day].breakfast = [...current, mealId];
+        }
       }
     } else if (mealType === 'fruit') {
       const current = newPlan[day].fruit || [];
-      if (current.length < 2) {
+      if (!current.includes(mealId)) {
         newPlan[day].fruit = [...current, mealId];
-      } else {
-        newPlan[day].fruit = [mealId];
       }
     } else {
       newPlan[day][mealType] = mealId;
@@ -369,6 +365,76 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     toastRef?.current?.success('Plan restored');
   }
 
+  // Drag-and-drop swap handlers
+  function handleDragStart(day, mealType, itemId) {
+    setDragSource({ day, mealType, itemId });
+  }
+
+  function handleDragOver(e, day, mealType) {
+    e.preventDefault();
+    const key = `${day}-${mealType}`;
+    if (dragOver !== key) setDragOver(key);
+  }
+
+  function handleDragLeave() {
+    setDragOver(null);
+  }
+
+  function handleDrop(day, mealType) {
+    setDragOver(null);
+    if (!dragSource || !plan) return;
+    const src = dragSource;
+    setDragSource(null);
+
+    // Only allow swap within same row type
+    if (src.mealType !== mealType) return;
+    // Same cell — no-op
+    if (src.day === day) return;
+
+    const newPlan = { ...plan };
+    newPlan[src.day] = { ...newPlan[src.day] };
+    newPlan[day] = { ...newPlan[day] };
+
+    if (mealType === 'lunch' || mealType === 'dinner') {
+      // Swap single-cell meals
+      const temp = newPlan[src.day][mealType];
+      newPlan[src.day][mealType] = newPlan[day][mealType];
+      newPlan[day][mealType] = temp;
+      // Swap base overrides too
+      const srcKey = `${src.day}-${mealType}`;
+      const dstKey = `${day}-${mealType}`;
+      setBaseOverrides((prev) => {
+        const next = { ...prev };
+        const tempBase = next[srcKey];
+        next[srcKey] = next[dstKey];
+        next[dstKey] = tempBase;
+        if (next[srcKey] === undefined) delete next[srcKey];
+        if (next[dstKey] === undefined) delete next[dstKey];
+        return next;
+      });
+    } else if (mealType === 'morning') {
+      // Swap entire morning (breakfast + drinks)
+      const tempBf = newPlan[src.day].breakfast;
+      const tempDr = newPlan[src.day].drinks;
+      newPlan[src.day].breakfast = newPlan[day].breakfast;
+      newPlan[src.day].drinks = newPlan[day].drinks;
+      newPlan[day].breakfast = tempBf;
+      newPlan[day].drinks = tempDr;
+    } else if (mealType === 'fruit') {
+      const temp = newPlan[src.day].fruit;
+      newPlan[src.day].fruit = newPlan[day].fruit;
+      newPlan[day].fruit = temp;
+    }
+
+    setPlan(newPlan);
+    toastRef?.current?.success(`Swapped ${src.day} ↔ ${day}`);
+  }
+
+  function handleDragEnd() {
+    setDragSource(null);
+    setDragOver(null);
+  }
+
   function handleQtyChange(mealId, delta) {
     setQuantities((prev) => {
       const meal = findMeal(mealId);
@@ -390,16 +456,16 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
   }
 
   const cachedAiMeals = useMemo(() => {
-    if (!aiPlan || !masterMeals) return [];
+    if (!aiPlanCache || !masterMeals) return [];
     const aiMealIds = new Set();
     for (const day of DAYS) {
-      if (!aiPlan[day]) continue;
+      if (!aiPlanCache[day]) continue;
       for (const slot of ['breakfast', 'lunch', 'dinner']) {
-        if (aiPlan[day][slot]) aiMealIds.add(aiPlan[day][slot]);
+        if (aiPlanCache[day][slot]) aiMealIds.add(aiPlanCache[day][slot]);
       }
     }
     return [...aiMealIds].map((id) => findMeal(id)).filter(Boolean);
-  }, [aiPlan, masterMeals, findMeal]);
+  }, [aiPlanCache, masterMeals, findMeal]);
 
   if (loading || !masterMeals) {
     return (
@@ -423,9 +489,18 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
       );
     }
 
+    const isDragTarget = dragOver === `${day}-${mealType}`;
+
     return (
       <td key={`${day}-${mealType}`} className="p-1 align-top">
-        <div className="bg-cream/50 border border-ink/10 rounded-lg min-h-[70px] p-1">
+        <div
+          className={`bg-cream/50 border rounded-lg min-h-[70px] p-1 transition-colors ${
+            isDragTarget ? 'border-primary border-2 bg-primary-light/30' : 'border-ink/10'
+          }`}
+          onDragOver={(e) => handleDragOver(e, day, mealType)}
+          onDragLeave={handleDragLeave}
+          onDrop={() => handleDrop(day, mealType)}
+        >
           {items.length > 0 ? (
             <div className="flex flex-col gap-1">
               {items.map((itemId) => {
@@ -450,7 +525,10 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
                 return (
                   <div
                     key={itemId}
-                    className={`px-1.5 py-1 rounded border text-xs ${colorClass}`}
+                    draggable
+                    onDragStart={() => handleDragStart(day, mealType, itemId)}
+                    onDragEnd={handleDragEnd}
+                    className={`px-1.5 py-1 rounded border text-xs cursor-grab active:cursor-grabbing ${colorClass}`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="truncate">{icon ? `${icon} ` : ''}{item.name}</span>
@@ -520,17 +598,28 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     const meal = findMeal(mealId);
     const overriddenBase = baseOverrides[`${day}-${mealType}`] ?? meal?.base;
     const isAiPlaced = aiPlacedSlots.has(`${day}-${mealType}`);
+    const isDragTarget = dragOver === `${day}-${mealType}`;
     const mealWithOverrides = meal
       ? { ...meal, qty: quantities[mealId], base: overriddenBase }
       : null;
 
     return (
       <td key={`${day}-${mealType}`} className="p-1 align-top">
-        <div className={`rounded-lg min-h-[70px] p-1 ${
-          isAiPlaced
-            ? 'bg-purple-50 border-2 border-purple-300'
-            : 'bg-cream/50 border border-ink/10'
-        }`}>
+        <div
+          className={`rounded-lg min-h-[70px] p-1 transition-colors ${
+            isDragTarget
+              ? 'bg-primary-light/30 border-2 border-primary'
+              : isAiPlaced
+                ? 'bg-purple-50 border-2 border-purple-300'
+                : 'bg-cream/50 border border-ink/10'
+          }`}
+          draggable={!!mealWithOverrides}
+          onDragStart={() => mealWithOverrides && handleDragStart(day, mealType, mealId)}
+          onDragEnd={handleDragEnd}
+          onDragOver={(e) => handleDragOver(e, day, mealType)}
+          onDragLeave={handleDragLeave}
+          onDrop={() => handleDrop(day, mealType)}
+        >
           {isAiPlaced && (
             <div className="text-[8px] text-purple-500 font-semibold text-center mb-0.5 uppercase tracking-wide">
               AI pick
@@ -543,6 +632,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
               onSwap={() => setSwapTarget({ day, mealType })}
               onQtyChange={(delta) => handleQtyChange(mealId, delta)}
               onBaseChange={(newBase) => handleBaseChange(day, mealType, mealId, newBase)}
+              sideName={meal?.suggestedSide ? (masterMeals?.sides || []).find((s) => s.id === meal.suggestedSide)?.name : undefined}
             />
           ) : (
             <button
@@ -654,7 +744,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
           cachedAiMeals={cachedAiMeals}
           aiOverrideUsed={aiOverrideUsed}
           onAiOverrideUsed={() => setAiOverrideUsed(true)}
-          freshAiSuggestions={freshAiSuggestions}
+          freshAiSuggestions={freshAiSuggestions || []}
           onFreshAiSuggestions={setFreshAiSuggestions}
           onMasterMealsUpdate={handleMasterMealAdd}
           onSelect={handleSwapSelect}

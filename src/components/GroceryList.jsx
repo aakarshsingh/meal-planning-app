@@ -40,18 +40,18 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [removedItems, setRemovedItems] = useState(new Set());
   const [editingItem, setEditingItem] = useState(null);
   const [editQty, setEditQty] = useState('');
   const [editUnit, setEditUnit] = useState('');
   const editRef = useRef(null);
 
-  // Generate grocery list and auto-optimize with AI
+  // Generate grocery list AND optimize with AI before showing
   useEffect(() => {
     if (!plan) return;
     setLoading(true);
     setRemovedItems(new Set());
+    setGroceryData(null);
 
     fetch('/api/groceries/generate', {
       method: 'POST',
@@ -60,24 +60,20 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
     })
       .then((r) => r.json())
       .then((data) => {
-        setGroceryData(data);
-        setLoading(false);
-
-        // Auto-optimize with AI
-        setAiLoading(true);
-        fetch('/api/ai/optimize-grocery', {
+        // Now optimize with AI before showing
+        return fetch('/api/ai/optimize-grocery', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ groceryList: data, plan }),
         })
           .then((r) => r.json())
           .then((aiData) => {
-            setAiSuggestions(aiData.suggestions || []);
+            let optimized = data;
             // Apply AI quantity fixes
             if (aiData.fixes && aiData.fixes.length > 0) {
-              setGroceryData((prev) => {
-                if (!prev) return prev;
-                const updated = { ...prev, categories: prev.categories.map((cat) => ({
+              optimized = {
+                ...data,
+                categories: data.categories.map((cat) => ({
                   ...cat,
                   items: cat.items.map((item) => {
                     const fix = aiData.fixes.find(
@@ -88,14 +84,17 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
                     }
                     return item;
                   }),
-                }))};
-                return updated;
-              });
+                })),
+              };
             }
-            setAiLoading(false);
+            setGroceryData(optimized);
+            setAiSuggestions(aiData.suggestions || []);
+            setLoading(false);
           })
           .catch(() => {
-            setAiLoading(false);
+            // AI failed, show un-optimized list
+            setGroceryData(data);
+            setLoading(false);
           });
       })
       .catch(() => setLoading(false));
@@ -172,7 +171,7 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
       <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
         <div className="flex items-center gap-3 justify-center py-8">
           <div className="animate-spin w-6 h-6 border-3 border-primary/30 border-t-primary rounded-full" />
-          <span className="text-sm text-ink/50">Generating grocery list...</span>
+          <span className="text-sm text-ink/50">Generating & optimizing grocery list...</span>
         </div>
       </div>
     );
@@ -195,12 +194,6 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
           </span>
         </h2>
         <div className="flex gap-2 items-center">
-          {aiLoading && (
-            <span className="text-xs text-purple-400 flex items-center gap-1">
-              <span className="animate-spin w-3 h-3 border-2 border-purple-200 border-t-purple-500 rounded-full inline-block" />
-              Optimizing...
-            </span>
-          )}
           <button
             onClick={handleCopy}
             className={`text-xs px-2.5 py-1 rounded-md transition-all ${
@@ -312,6 +305,15 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
                         {item.name}
                       </span>
                       <span className="text-xs text-ink/50 shrink-0 ml-2 flex items-center gap-1">
+                        <button
+                          onClick={() => startEdit(item)}
+                          className="text-ink/25 hover:text-primary transition-colors"
+                          title="Edit quantity"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
                         <span
                           className="cursor-pointer hover:text-primary"
                           onClick={() => startEdit(item)}

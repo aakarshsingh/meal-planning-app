@@ -72,7 +72,7 @@ Planning rules:
 3. NEVER repeat the same meal ID twice in the same week
 4. AVOID meals used in the last 2 weeks history above
 5. If leftovers are available, choose meals that use those ingredients first
-6. Alternate bases for variety: don't have 3 rice-based meals in a row; mix rice, roti, paratha, pav, noodles
+6. Alternate bases for variety: don't have 3 rice-based meals in a row; mix rice, roti, paratha, pav
 7. Lighter meals (egg/breakfast-style) work well for weeknight dinners
 8. Each day needs: 1 breakfast, 1 lunch, 1 dinner, and 1-2 fruits
 9. Set skipped days/meals to null based on preferences above

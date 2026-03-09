@@ -39,10 +39,21 @@ function LeftoverInput({ leftovers, setLeftovers, onNext }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    fetch('/api/ingredients')
-      .then((r) => r.json())
-      .then((data) => {
-        setIngredients(data.ingredients || []);
+    Promise.all([
+      fetch('/api/ingredients').then((r) => r.json()),
+      fetch('/api/meals').then((r) => r.json()),
+    ])
+      .then(([ingData, mealsData]) => {
+        const ings = ingData.ingredients || [];
+        // Add fruits as searchable pantry items
+        const fruitItems = (mealsData.fruits || []).map((f) => ({
+          id: f.id,
+          name: f.name,
+          category: 'fruit',
+          purchaseUnit: f.unit || 'nos',
+          purchaseQty: f.defaultQty || 2,
+        }));
+        setIngredients([...ings, ...fruitItems]);
         setLoading(false);
       })
       .catch(() => setLoading(false));

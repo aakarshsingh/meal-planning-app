@@ -32,7 +32,8 @@ function findMealById(masterMeals, mealId) {
     masterMeals.breakfasts.find((b) => b.id === mealId) ||
     masterMeals.meals.find((m) => m.id === mealId) ||
     (masterMeals.drinks || []).find((d) => d.id === mealId) ||
-    masterMeals.fruits.find((f) => f.id === mealId)
+    masterMeals.fruits.find((f) => f.id === mealId) ||
+    (masterMeals.sides || []).find((s) => s.id === mealId)
   );
 }
 
@@ -49,7 +50,14 @@ function aggregateIngredients(plan, masterMeals) {
       const meal = findMealById(masterMeals, mealId);
       if (!meal || !meal.ingredients) continue;
 
-      for (const ing of meal.ingredients) {
+      // Also include side dish ingredients if meal has suggestedSide
+      const sideIngs = [];
+      if (meal.suggestedSide && masterMeals.sides) {
+        const side = masterMeals.sides.find((s) => s.id === meal.suggestedSide);
+        if (side?.ingredients) sideIngs.push(...side.ingredients);
+      }
+
+      for (const ing of [...meal.ingredients, ...sideIngs]) {
         if (!totals[ing.ingredientId]) {
           totals[ing.ingredientId] = { qty: 0, unit: ing.unit };
         }

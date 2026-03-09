@@ -47,6 +47,7 @@ router.post('/', async (req, res) => {
       ...(data.meals || []),
       ...(data.drinks || []),
       ...(data.fruits || []),
+      ...(data.sides || []),
     ].map((m) => m.name.toLowerCase().trim());
 
     if (allNames.includes(meal.name.toLowerCase().trim())) {
@@ -60,6 +61,9 @@ router.post('/', async (req, res) => {
     } else if (meal.id.startsWith('drink-')) {
       if (!data.drinks) data.drinks = [];
       data.drinks.push(meal);
+    } else if (meal.id.startsWith('side-')) {
+      if (!data.sides) data.sides = [];
+      data.sides.push(meal);
     } else {
       data.meals.push(meal);
     }
@@ -82,6 +86,7 @@ router.put('/:id', async (req, res) => {
       { key: 'meals', arr: data.meals || [] },
       { key: 'drinks', arr: data.drinks || [] },
       { key: 'fruits', arr: data.fruits || [] },
+      { key: 'sides', arr: data.sides || [] },
     ];
 
     let found = false;
@@ -112,7 +117,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     let found = false;
-    for (const key of ['breakfasts', 'meals', 'drinks', 'fruits']) {
+    for (const key of ['breakfasts', 'meals', 'drinks', 'fruits', 'sides']) {
       const arr = data[key] || [];
       const idx = arr.findIndex((m) => m.id === id);
       if (idx >= 0) {

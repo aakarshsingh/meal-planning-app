@@ -203,6 +203,10 @@ function App() {
   // Lifted state: qty/base overrides persist across Edit ↔ Review
   const [quantities, setQuantities] = useState({});
   const [baseOverrides, setBaseOverrides] = useState({});
+  // Lifted AI cache: persists across Edit ↔ Review so no extra AI calls
+  const [aiPlanCache, setAiPlanCache] = useState(null);
+  const [aiOverrideUsed, setAiOverrideUsed] = useState(false);
+  const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
 
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
@@ -435,6 +439,9 @@ function App() {
           });
           setQuantities({});
           setBaseOverrides({});
+          setAiPlanCache(null);
+          setAiOverrideUsed(false);
+          setFreshAiSuggestions([]);
           setFinalized(false);
           setStep(0);
         }, 2000);
@@ -525,6 +532,12 @@ function App() {
                   setQuantities={setQuantities}
                   baseOverrides={baseOverrides}
                   setBaseOverrides={setBaseOverrides}
+                  aiPlanCache={aiPlanCache}
+                  setAiPlanCache={setAiPlanCache}
+                  aiOverrideUsed={aiOverrideUsed}
+                  setAiOverrideUsed={setAiOverrideUsed}
+                  freshAiSuggestions={freshAiSuggestions}
+                  setFreshAiSuggestions={setFreshAiSuggestions}
                   onBack={() => setStep(1)}
                   toastRef={toastRef}
                 />

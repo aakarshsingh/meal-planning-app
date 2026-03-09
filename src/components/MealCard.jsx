@@ -14,14 +14,14 @@ const FRUIT_ICONS = {
   'Papaya': '\u{1F352}',
 };
 
-const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'noodles', 'none'];
-const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', noodles: 'Noodles', none: 'No base' };
+const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'none'];
+const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', none: 'No base' };
 
 // Bases that are countable (show qty +/- buttons)
 const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 
 // Breakfasts that should show qty +/- buttons
-const COUNTABLE_BREAKFASTS = ['bread', 'aloo paratha', 'chilla', 'french toast', 'toast'];
+const COUNTABLE_BREAKFASTS = ['bread', 'aloo paratha', 'chilla', 'french toast', 'toast', 'poori'];
 
 export function isCountable(meal) {
   // Lunch/dinner: countable only if base is roti/paratha/pav
@@ -43,7 +43,7 @@ function formatTitle(meal) {
   return `${meal.name} + ${baseLabel}`;
 }
 
-function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
+function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName }) {
   if (!meal) return null;
 
   const isChicken = meal.type === 'chicken';
@@ -64,9 +64,14 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange }) {
     >
       <div className="flex items-start gap-1 mb-1">
         {icon && <span className="text-base leading-none">{icon}</span>}
-        <span className="font-medium text-ink leading-tight text-xs line-clamp-2 flex-1">
-          {formatTitle(meal)}
-        </span>
+        <div className="flex-1">
+          <span className="font-medium text-ink leading-tight text-xs line-clamp-2">
+            {formatTitle(meal)}
+          </span>
+          {sideName && (
+            <span className="block text-[9px] text-ink/40 leading-tight mt-0.5">+ {sideName}</span>
+          )}
+        </div>
       </div>
 
       {hasBase && onBaseChange && (
