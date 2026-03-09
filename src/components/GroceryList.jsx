@@ -44,7 +44,13 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
   const [editingItem, setEditingItem] = useState(null);
   const [editQty, setEditQty] = useState('');
   const [editUnit, setEditUnit] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addName, setAddName] = useState('');
+  const [addQty, setAddQty] = useState('');
+  const [addUnit, setAddUnit] = useState('nos');
+  const [addCategory, setAddCategory] = useState('vegetable');
   const editRef = useRef(null);
+  const addNameRef = useRef(null);
 
   // Generate grocery list AND optimize with AI before showing
   useEffect(() => {
@@ -164,6 +170,37 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
     setEditingItem(null);
   }
 
+  function handleAddItem() {
+    const name = addName.trim();
+    const qty = parseFloat(addQty);
+    if (!name || isNaN(qty) || qty <= 0) return;
+
+    setGroceryData((prev) => {
+      if (!prev) return prev;
+      const newItem = { name, qty, unit: addUnit, id: `custom-${Date.now()}` };
+      const catIndex = prev.categories.findIndex((c) => c.name === addCategory);
+      if (catIndex >= 0) {
+        const updated = [...prev.categories];
+        updated[catIndex] = {
+          ...updated[catIndex],
+          items: [...updated[catIndex].items, newItem],
+        };
+        return { ...prev, categories: updated };
+      }
+      // Category doesn't exist yet, add it
+      return {
+        ...prev,
+        categories: [...prev.categories, { name: addCategory, items: [newItem] }],
+      };
+    });
+
+    setAddName('');
+    setAddQty('');
+    setAddUnit('nos');
+    // Keep form open and focus name for quick batch adds
+    setTimeout(() => addNameRef.current?.focus(), 50);
+  }
+
   if (!plan) return null;
 
   if (loading) {
@@ -194,6 +231,15 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
           </span>
         </h2>
         <div className="flex gap-2 items-center">
+          <button
+            onClick={() => {
+              setShowAddForm((v) => !v);
+              if (!showAddForm) setTimeout(() => addNameRef.current?.focus(), 50);
+            }}
+            className="text-xs px-2.5 py-1 rounded-md transition-all bg-cream text-ink/60 border border-ink/15 hover:bg-primary-light hover:text-primary"
+          >
+            + Add Item
+          </button>
           <button
             onClick={handleCopy}
             className={`text-xs px-2.5 py-1 rounded-md transition-all ${
@@ -227,6 +273,67 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Add item form */}
+      {showAddForm && (
+        <div className="mb-4 bg-cream/50 rounded-lg border border-ink/10 p-3">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="flex-1 min-w-[120px]">
+              <label className="text-[10px] text-ink/50 uppercase tracking-wide">Name</label>
+              <input
+                ref={addNameRef}
+                type="text"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
+                placeholder="e.g. Paneer"
+                className="w-full px-2 py-1 text-sm rounded border border-ink/15 text-ink"
+              />
+            </div>
+            <div className="w-20">
+              <label className="text-[10px] text-ink/50 uppercase tracking-wide">Qty</label>
+              <input
+                type="number"
+                value={addQty}
+                onChange={(e) => setAddQty(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
+                placeholder="1"
+                className="w-full px-2 py-1 text-sm rounded border border-ink/15 text-ink"
+              />
+            </div>
+            <div className="w-20">
+              <label className="text-[10px] text-ink/50 uppercase tracking-wide">Unit</label>
+              <select
+                value={addUnit}
+                onChange={(e) => setAddUnit(e.target.value)}
+                className="w-full px-1 py-1 text-sm rounded border border-ink/15 text-ink"
+              >
+                {Object.entries(UNIT_LABELS).map(([u, label]) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-28">
+              <label className="text-[10px] text-ink/50 uppercase tracking-wide">Category</label>
+              <select
+                value={addCategory}
+                onChange={(e) => setAddCategory(e.target.value)}
+                className="w-full px-1 py-1 text-sm rounded border border-ink/15 text-ink"
+              >
+                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleAddItem}
+              className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors"
+            >
+              Add
+            </button>
+          </div>
         </div>
       )}
 

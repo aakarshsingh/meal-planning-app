@@ -79,19 +79,18 @@ function shuffle(arr) {
 }
 
 // Parse special requests like "Have Poori Aloo Subzi on Saturday" or
-// "Have Chicken Gravy on Wednesday and Friday" into concrete constraints.
-// Returns { breakfast: { Day: mealId }, lunch_dinner: { Day: [mealIds] } }
+// "Have Chicken Gravy on Wednesday Dinner" into concrete constraints.
+// Returns { breakfast: { Day: mealId }, lunch_dinner: { Day: [{ id, slot? }] } }
 function parseSpecialRequests(specialRequests, masterMeals) {
   if (!specialRequests || specialRequests.length === 0) return { breakfast: {}, lunch_dinner: {} };
 
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayAliases = {
     mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
     fri: 'Friday', sat: 'Saturday', monday: 'Monday', tuesday: 'Tuesday',
     wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
   };
 
-  // Build a lookup: lowercase name -> meal object (with source category)
+  // Build a lookup: meal objects with source category
   const allItems = [];
   for (const b of masterMeals.breakfasts || []) {
     allItems.push({ ...b, _cat: 'breakfast' });
@@ -103,11 +102,11 @@ function parseSpecialRequests(specialRequests, masterMeals) {
   const constraints = { breakfast: {}, lunch_dinner: {} };
 
   for (const req of specialRequests) {
-    // Extract day names from the request
     const reqLower = req.toLowerCase();
+
+    // Extract day names
     const mentionedDays = [];
     for (const [alias, dayName] of Object.entries(dayAliases)) {
-      // Match whole word only
       const regex = new RegExp(`\\b${alias}\\b`, 'i');
       if (regex.test(reqLower) && !mentionedDays.includes(dayName)) {
         mentionedDays.push(dayName);
@@ -115,45 +114,61 @@ function parseSpecialRequests(specialRequests, masterMeals) {
     }
     if (mentionedDays.length === 0) continue;
 
-    // Try to find matching meal by name (fuzzy: check if meal name words appear in request)
+    // Detect slot preference (lunch/dinner)
+    const wantsLunch = /\blunch\b/i.test(req);
+    const wantsDinner = /\bdinner\b/i.test(req);
+    const slotPref = wantsDinner ? 'dinner' : wantsLunch ? 'lunch' : null;
+
+    // Strip day names, slot words, and filler from request for cleaner meal matching
+    let cleanReq = reqLower;
+    for (const alias of Object.keys(dayAliases)) {
+      cleanReq = cleanReq.replace(new RegExp(`\\b${alias}\\b`, 'gi'), '');
+    }
+    cleanReq = cleanReq.replace(/\b(lunch|dinner|breakfast|have|do|on|and|for|the|make|want|keep|put)\b/gi, '').trim();
+
+    // Fuzzy match: score by word overlap ratio (matched / total words in name)
     let bestMatch = null;
     let bestScore = 0;
 
     for (const item of allItems) {
+      // Exact substring match wins outright
+      if (cleanReq.includes(item.name.toLowerCase()) || reqLower.includes(item.name.toLowerCase())) {
+        bestMatch = item;
+        bestScore = 999;
+        continue;
+      }
+
       const itemWords = item.name.toLowerCase().split(/[\s+]+/).filter((w) => w.length > 2);
+      if (itemWords.length === 0) continue;
       let matchCount = 0;
       for (const word of itemWords) {
-        if (reqLower.includes(word)) matchCount++;
+        if (cleanReq.includes(word) || reqLower.includes(word)) matchCount++;
       }
-      // Require at least 1 significant word match and better than current best
-      if (matchCount > 0 && matchCount > bestScore) {
-        bestScore = matchCount;
+      if (matchCount === 0) continue;
+
+      // Score = matched words / total words (prefer higher ratio)
+      // Tiebreak: prefer more matched words
+      const ratio = matchCount / itemWords.length;
+      const score = ratio * 100 + matchCount;
+      if (score > bestScore) {
+        bestScore = score;
         bestMatch = item;
-      }
-      // Also try exact substring match
-      if (reqLower.includes(item.name.toLowerCase())) {
-        bestMatch = item;
-        bestScore = 999; // Exact match wins
       }
     }
 
     if (!bestMatch) continue;
 
     // Check for "different kinds" / "two different" modifier
-    const wantsDifferent = /\bdifferent\b/i.test(req) || /\btwo\s+different\b/i.test(req);
+    const wantsDifferent = /\bdifferent\b/i.test(req);
 
     if (wantsDifferent && mentionedDays.length > 1 && bestMatch._cat === 'meal') {
-      // Find all meals of the same type (e.g., all meat meals)
       const sameType = allItems.filter((item) => item._cat === 'meal' && item.type === bestMatch.type);
       const usedIds = new Set();
       for (const day of mentionedDays) {
-        // Pick a different meal of the same type for each day
         const available = sameType.filter((m) => !usedIds.has(m.id));
         const pick = available.length > 0 ? available[0] : sameType[0];
         if (!constraints.lunch_dinner[day]) constraints.lunch_dinner[day] = [];
-        if (!constraints.lunch_dinner[day].includes(pick.id)) {
-          constraints.lunch_dinner[day].push(pick.id);
-        }
+        constraints.lunch_dinner[day].push({ id: pick.id, slot: slotPref });
         usedIds.add(pick.id);
       }
     } else {
@@ -162,9 +177,7 @@ function parseSpecialRequests(specialRequests, masterMeals) {
           constraints.breakfast[day] = bestMatch.id;
         } else {
           if (!constraints.lunch_dinner[day]) constraints.lunch_dinner[day] = [];
-          if (!constraints.lunch_dinner[day].includes(bestMatch.id)) {
-            constraints.lunch_dinner[day].push(bestMatch.id);
-          }
+          constraints.lunch_dinner[day].push({ id: bestMatch.id, slot: slotPref });
         }
       }
     }
@@ -264,12 +277,16 @@ function pickMeals(allMeals, activeDays, leftovers, preferences, history, config
   let lastBase = null;
 
   // Pass 0: Pre-place hard constraints from special requests
-  for (const [day, mealIds] of Object.entries(constraints)) {
-    for (const mealId of mealIds) {
+  // constraints = { Day: [{ id, slot? }] }
+  for (const [day, entries] of Object.entries(constraints)) {
+    for (const entry of entries) {
+      const mealId = entry.id;
+      const slotPref = entry.slot; // 'lunch', 'dinner', or null
       const meal = allMeals.find((m) => m.id === mealId);
       if (!meal) continue;
-      // Find an open slot for this day (prefer lunch first, then dinner)
-      for (const mealType of ['lunch', 'dinner']) {
+      // Determine slot order based on preference
+      const slotOrder = slotPref === 'dinner' ? ['dinner', 'lunch'] : slotPref === 'lunch' ? ['lunch', 'dinner'] : ['lunch', 'dinner'];
+      for (const mealType of slotOrder) {
         if (plan[day][mealType]) continue; // slot taken
         if (meal.slot === 'dinner' && mealType !== 'dinner') continue;
         plan[day][mealType] = mealId;
@@ -403,7 +420,20 @@ export async function generateWeeklyPlan(leftovers = [], preferences = {}, histo
     }
   }
 
-  return plan;
+  // Build list of constrained slots (day-slot keys) that must not be overridden
+  const constrainedSlots = [];
+  for (const [day, entries] of Object.entries(specialConstraints.lunch_dinner)) {
+    for (const entry of entries) {
+      // Find which slot this constraint ended up in
+      if (plan[day]?.lunch === entry.id) constrainedSlots.push(`${day}-lunch`);
+      if (plan[day]?.dinner === entry.id) constrainedSlots.push(`${day}-dinner`);
+    }
+  }
+  for (const [day, bfId] of Object.entries(specialConstraints.breakfast)) {
+    if (plan[day]?.breakfast?.includes(bfId)) constrainedSlots.push(`${day}-breakfast`);
+  }
+
+  return { plan, constrainedSlots };
 }
 
 export async function getSuggestions(day, mealType, currentPlan = {}, historyData = null) {

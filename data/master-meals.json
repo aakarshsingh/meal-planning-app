@@ -176,35 +176,6 @@
       ]
     },
     {
-      "id": "bf-07",
-      "name": "Aloo Paratha",
-      "defaultQty": 2,
-      "unit": "pieces",
-      "accompaniment": "Coffee",
-      "ingredients": [
-        {
-          "ingredientId": "ing-atta",
-          "qty": 150,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-potato",
-          "qty": 150,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-green-chilli",
-          "qty": 5,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-coriander",
-          "qty": 5,
-          "unit": "g"
-        }
-      ]
-    },
-    {
       "id": "bf-08",
       "name": "Dosa",
       "defaultQty": 4,
@@ -252,6 +223,20 @@
     {
       "id": "bf-11",
       "name": "Poori",
+      "defaultQty": 2,
+      "unit": "nos",
+      "ingredients": []
+    },
+    {
+      "id": "bf-12",
+      "name": "Mixed Veg Cutlets",
+      "defaultQty": 2,
+      "unit": "nos",
+      "ingredients": []
+    },
+    {
+      "id": "bf-13",
+      "name": "Aloo (+Gobi) Paratha",
       "defaultQty": 2,
       "unit": "nos",
       "ingredients": []
@@ -475,7 +460,7 @@
     },
     {
       "id": "meal-07",
-      "name": "Chicken Brown Gravy",
+      "name": "Chicken in Thick Brown Gravy",
       "type": "meat",
       "slot": "flexible",
       "base": "paratha",
@@ -952,38 +937,8 @@
       ]
     },
     {
-      "id": "meal-20",
-      "name": "Aloo Parathas",
-      "type": "veg",
-      "slot": "flexible",
-      "base": "none",
-      "defaultQty": 2,
-      "ingredients": [
-        {
-          "ingredientId": "ing-potato",
-          "qty": 150,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-atta",
-          "qty": 150,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-green-chilli",
-          "qty": 5,
-          "unit": "g"
-        },
-        {
-          "ingredientId": "ing-coriander",
-          "qty": 5,
-          "unit": "g"
-        }
-      ]
-    },
-    {
       "id": "meal-22",
-      "name": "Aloo Beans",
+      "name": "Mix Veg Sabzi",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -1024,7 +979,7 @@
     },
     {
       "id": "meal-23",
-      "name": "Chicken Gravy with Cream",
+      "name": "Chicken Saag",
       "type": "meat",
       "slot": "flexible",
       "base": "paratha",
@@ -1036,6 +991,41 @@
       "type": "meat",
       "slot": "flexible",
       "base": "paratha",
+      "ingredients": []
+    },
+    {
+      "id": "meal-25",
+      "name": "Garlic Khichdi",
+      "type": "veg",
+      "slot": "flexible",
+      "base": "none",
+      "suggestedSide": "side-02",
+      "ingredients": []
+    },
+    {
+      "id": "meal-26",
+      "name": "Jeera Aloo",
+      "type": "veg",
+      "slot": "flexible",
+      "base": "paratha",
+      "suggestedSide": "side-03",
+      "ingredients": []
+    },
+    {
+      "id": "meal-27",
+      "name": "Paneer Do Pyaza",
+      "type": "veg",
+      "slot": "flexible",
+      "base": "paratha",
+      "ingredients": []
+    },
+    {
+      "id": "meal-28",
+      "name": "Sukhe Aloo",
+      "type": "veg",
+      "slot": "flexible",
+      "base": "rice",
+      "suggestedSide": "side-01",
       "ingredients": []
     }
   ],
@@ -1120,6 +1110,11 @@
           "unit": "g"
         }
       ]
+    },
+    {
+      "id": "side-03",
+      "name": "Palak Dal",
+      "ingredients": []
     }
   ],
   "drinks": [

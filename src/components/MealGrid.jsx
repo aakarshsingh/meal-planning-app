@@ -30,7 +30,11 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
   const [swapTarget, setSwapTarget] = useState(null);
   // Track which day-slot combos were placed by AI (e.g. "Monday-lunch")
   const [aiPlacedSlots, setAiPlacedSlots] = useState(new Set());
+  // Slots placed by special request constraints — never overridden by AI merge
+  const [constrainedSlots, setConstrainedSlots] = useState(new Set());
+  const constrainedSlotsRef = useRef(new Set());
   const initialPlanRef = useRef(null);
+  const aiCallInFlightRef = useRef(false);
   // Drag-and-drop state
   const [dragSource, setDragSource] = useState(null);
   const [dragOver, setDragOver] = useState(null);
@@ -55,7 +59,7 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
   }, [skipDays, skipMeals]);
 
   // Merge AI plan into existing plan: REPLACE some rule-based slots with AI picks
-  // AI should visibly enhance the plan — at least 2 slots swapped
+  // NEVER override constrained slots (from special requests)
   function mergeAiPlan(prevPlan, aiData) {
     if (!prevPlan) {
       // No existing plan — use AI plan directly, mark all lunch/dinner as AI
@@ -70,19 +74,16 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
 
     const merged = { ...prevPlan };
     const placed = new Set();
-
-    // Collect all meal IDs used by AI plan to avoid duplicates
-    const aiMealIds = new Set();
-    for (const day of DAYS) {
-      if (aiData[day]?.lunch) aiMealIds.add(aiData[day].lunch);
-      if (aiData[day]?.dinner) aiMealIds.add(aiData[day].dinner);
-    }
+    const protected_ = constrainedSlotsRef.current;
 
     // Find slots where AI suggests something DIFFERENT from rule-based
     const candidates = [];
     for (const day of DAYS) {
       if (skipDays.includes(day)) continue;
       for (const slot of ['lunch', 'dinner']) {
+        const key = `${day}-${slot}`;
+        // NEVER override constrained slots
+        if (protected_.has(key)) continue;
         const isSkipped = skipMeals.some((s) => s.day === day && s.mealType === slot);
         if (isSkipped) continue;
         const aiMeal = aiData[day]?.[slot];
@@ -104,9 +105,7 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
     }
 
     for (const { day, slot, aiMealId } of toReplace) {
-      // Skip if this AI meal is already used elsewhere in the merged plan
       if (usedIds.has(aiMealId)) continue;
-      // Remove old meal from used set, add new one
       const oldMealId = merged[day]?.[slot];
       if (oldMealId) usedIds.delete(oldMealId);
       merged[day] = { ...merged[day] };
@@ -133,39 +132,44 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
     return merged;
   }
 
+  // Fire AI call — guarded by aiCallInFlightRef to prevent StrictMode double-calls
+  function fireAiCall() {
+    if (aiCallInFlightRef.current || aiPlanCache || aiFailed || allSkipped) return;
+    aiCallInFlightRef.current = true;
+    setAiLoading(true);
+    fetch('/api/ai/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leftovers, preferences }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error(`AI API returned ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (data.plan && data.source === 'ai') {
+          setAiPlanCache(data.plan);
+          setPlan((prev) => mergeAiPlan(prev, data.plan));
+          toastRef?.current?.success('AI enhanced your plan!');
+        } else if (data.source === 'rule-based') {
+          console.warn('AI generation fell back to rule-based on server');
+        }
+        setAiLoading(false);
+      })
+      .catch((err) => {
+        console.error('AI plan call failed:', err);
+        setAiLoading(false);
+        setAiFailed(true);
+      });
+  }
+
   // Generate plan on mount — AI call only once, cached in App.jsx
   useEffect(() => {
     if (plan) {
       setLoading(false);
       if (!initialPlanRef.current) initialPlanRef.current = JSON.parse(JSON.stringify(plan));
       // Skip AI if already cached (e.g. coming back from Review)
-      if (!aiPlanCache && !aiFailed && !allSkipped) {
-        setAiLoading(true);
-        fetch('/api/ai/generate-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leftovers, preferences }),
-        })
-          .then((r) => {
-            if (!r.ok) throw new Error(`AI API returned ${r.status}`);
-            return r.json();
-          })
-          .then((data) => {
-            if (data.plan && data.source === 'ai') {
-              setAiPlanCache(data.plan);
-              setPlan((prev) => mergeAiPlan(prev, data.plan));
-              toastRef?.current?.success('AI enhanced your plan!');
-            } else if (data.source === 'rule-based') {
-              console.warn('AI generation fell back to rule-based on server');
-            }
-            setAiLoading(false);
-          })
-          .catch((err) => {
-            console.error('AI plan call failed:', err);
-            setAiLoading(false);
-            setAiFailed(true);
-          });
-      }
+      fireAiCall();
       return;
     }
 
@@ -189,40 +193,20 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
       .then((data) => {
         setPlan(data.plan);
         initialPlanRef.current = JSON.parse(JSON.stringify(data.plan));
+        // Capture constrained slots from rule-based engine before AI merge
+        if (data.constrainedSlots) {
+          const cs = new Set(data.constrainedSlots);
+          constrainedSlotsRef.current = cs;
+          setConstrainedSlots(cs);
+        }
         setLoading(false);
+        // Now fire AI call — constraints are set, merge will respect them
+        fireAiCall();
       })
       .catch(() => {
         setLoading(false);
         toastRef?.current?.error('Failed to generate meal plan');
       });
-
-    if (!aiPlanCache) {
-      setAiLoading(true);
-      fetch('/api/ai/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leftovers, preferences }),
-      })
-        .then((r) => {
-          if (!r.ok) throw new Error(`AI API returned ${r.status}`);
-          return r.json();
-        })
-        .then((data) => {
-          if (data.plan && data.source === 'ai') {
-            setAiPlanCache(data.plan);
-            setPlan((prev) => mergeAiPlan(prev, data.plan));
-            toastRef?.current?.success('AI enhanced your plan!');
-          } else if (data.source === 'rule-based') {
-            console.warn('AI generation fell back to rule-based on server');
-          }
-          setAiLoading(false);
-        })
-        .catch((err) => {
-          console.error('AI plan call failed:', err);
-          setAiLoading(false);
-          setAiFailed(true);
-        });
-    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const findMeal = useCallback(

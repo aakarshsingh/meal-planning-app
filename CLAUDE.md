@@ -26,24 +26,24 @@ meal-planner/
 │   ├── index.js                 # Express server entry
 │   ├── routes/
 │   │   ├── meals.js             # GET/POST/PUT/DELETE master meals, sides, and ingredients
-│   │   ├── planner.js           # Current week CRUD, finalize to history
+│   │   ├── planner.js           # Current week CRUD, finalize to history, history listing
 │   │   ├── groceries.js         # Grocery list generation (accepts baseOverrides)
 │   │   ├── suggest.js           # Rule-based suggestion engine routes
 │   │   └── ai.js                # Claude API proxy routes (with noOp for all-skipped)
 │   └── utils/
-│       ├── fileStore.js         # readJSON, writeJSON, appendToHistory helpers
+│       ├── fileStore.js         # readJSON, writeJSON, appendToHistory (upsert) helpers
 │       ├── suggestionEngine.js  # Rule-based plan generation and swap suggestions
 │       ├── groceryBuilder.js    # Aggregate ingredients (incl. side dishes), subtract leftovers, group by category
 │       └── prompts.js           # Claude API prompt templates (type-specific swaps, grocery fixes)
 ├── src/
-│   ├── App.jsx                  # 3-step wizard, lifted qty/base/AI state, auto-save, resume, validation
+│   ├── App.jsx                  # 3-step wizard, lifted qty/base/AI state, auto-save, resume, validation, history edit
 │   └── components/
 │       ├── LeftoverInput.jsx    # Screen 1: pantry stock input (ingredients + fruits), fraction qty support
 │       ├── WeekPreferences.jsx  # Screen 2: skip days, special requests, chicken count
 │       ├── MealGrid.jsx         # Screen 3: HTML table grid, AI indicators, drag-and-drop swap, click-to-add
 │       ├── MealCard.jsx         # Meal tile: "Name + Base" title, base swap, smart qty, side dish label
 │       ├── SwapModal.jsx        # 3-section modal: AI suggestions, rule-based, everything else
-│       ├── GroceryList.jsx      # Pre-optimized grocery with edit icon, per-item edit/remove
+│       ├── GroceryList.jsx      # Pre-optimized grocery with edit icon, per-item edit/remove, add custom items
 │       ├── WeeklyChart.jsx      # Copyable day-wise meal text with base/qty overrides
 │       ├── Toast.jsx            # Toast notification system (success/error/warning)
 │       └── ManageMealsModal.jsx # CRUD meals/sides with dedup check, categories, suggestedSide, inline edit/delete
@@ -79,7 +79,7 @@ meal-planner/
 
 ## State Management
 
-- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion` are owned by App.jsx, not MealGrid
+- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion`, `editingHistoryWeek` are owned by App.jsx, not MealGrid
 - **Persistence**: qty/base/AI cache persist across Edit ↔ Review transitions — no extra API calls on "Back to Edit"
 - **Auto-save**: current-week.json saves quantities and baseOverrides (debounced 2s)
 - **Resume**: Restores quantities and baseOverrides from saved state
@@ -100,7 +100,7 @@ meal-planner/
 - `ingredients[]`: id (ing-XXX), name, category (staple/vegetable/dairy/protein/bakery/ready-mix/spice), purchaseUnit, purchaseQty, shelfLifeDays, alwaysInStock (optional)
 
 ### history.json
-- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs]
+- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs], quantities{}, baseOverrides{}
 
 ### current-week.json
 - weekStart, weekEnd, leftovers[], preferences{}, plan{}, quantities{}, baseOverrides{}, groceryList[], finalized
@@ -139,7 +139,7 @@ API calls are budgeted to save costs. AI state is lifted to App.jsx and cached �
 Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Grid) → Screen 3 Part 2 (Review + Finalize)
 ```
 
-- **Header**: Calendar dropdown week picker (local timezone safe), "Manage Meals" button
+- **Header**: Calendar dropdown week picker (local timezone safe), "History" dropdown, "Manage Meals" button
 - **Step indicators**: Clickable — can navigate back to Pantry Stock or Preferences from any later step
 - **Screen 1**: Autocomplete ingredient search (ingredients + fruits), fraction qty support
 - **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, meat count stepper, special requests (free text, parsed into hard constraints)
@@ -147,7 +147,7 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - **Screen 3 Part 2** (Review): Weekly Chart (with base/qty overrides) + pre-optimized Grocery List + "Back to Edit" (no API call, AI cached) + "Finalize Week"
 - **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else. Sticky search filter at top filters all 3 sections. "Add & Use" for new dishes.
 - **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Sides, Fruits). Closes only on cross/ESC. Inline edit with suggestedSide selector for mains. "Also add to Mains" checkbox for breakfasts. Add form stays open for batch adds.
-- **GroceryList**: Pre-optimized (loading until AI fixes applied), pencil edit icon per item, per-item edit (qty/unit) and remove (x button)
+- **GroceryList**: Pre-optimized (loading until AI fixes applied), pencil edit icon per item, per-item edit (qty/unit) and remove (x button), "+ Add Item" for custom grocery items
 
 ## Style Guide
 
@@ -178,3 +178,6 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - No limit on breakfast/drink items per day — user can add as many as desired
 - Special requests in preferences are hard constraints — both rule-based engine and AI prompt enforce them
 - Skipped slots on Screen 3 can be unskipped via hover X button — revives the slot for planning
+- History edit: loading a past week sets `aiPlanCache` to `{}` (truthy) to skip AI generation — preserves user's original meal choices
+- History upsert: `appendToHistory` uses weekStart as key — re-finalizing updates the existing entry, not a duplicate
+- Finalize saves `quantities` and `baseOverrides` to history.json alongside meal data

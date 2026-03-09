@@ -36,7 +36,9 @@
 - **Pre-optimized grocery list** — AI fixes quantities before display (Mushroom→200g, Coriander→1 bunch), bulk buy tips
 - **Editable grocery items** — Pencil icon + click to edit qty/unit, remove with x button
 - **Copyable outputs** — Day-wise meal chart + grocery list as WhatsApp-friendly text
-- **History tracking** — Saves finalized weeks, learns over time
+- **History tracking** — Saves finalized weeks (incl. qty/base overrides), learns over time
+- **Edit past weeks** — History dropdown in header lists all finalized weeks. Click to load into the grid, edit meals/grocery, and re-finalize (upserts, no duplicates)
+- **Add custom grocery items** — "+ Add Item" button on grocery list to add items not derived from meals (with name, qty, unit, category)
 - **Manage Meals** — CRUD for all categories (Breakfasts, Drinks, Mains, Sides, Fruits). Inline edit with suggestedSide selector. Closes only on cross/ESC. Batch add support. New items reflect immediately in grid
 - **Unskip slots on grid** — Skipped cells show X on hover to revive them for planning
 - **Clickable step indicators** — Navigate back to Pantry Stock or Preferences anytime
@@ -84,10 +86,10 @@ Weekly HTML table: Mon–Sat x Breakfast, Lunch, Dinner, Fruit.
 Day-wise formatted text with base and qty overrides. One-click copy per day or full week.
 
 ### Output 2 — Grocery List
-Auto-generated and AI-optimized before display (includes side dish ingredients). Pencil edit icon per item. Per-item edit (qty/unit) and remove. Grouped by category.
+Auto-generated and AI-optimized before display (includes side dish ingredients). Pencil edit icon per item. Per-item edit (qty/unit) and remove. "+ Add Item" for custom entries. Grouped by category.
 
 ### Finalize
-Saves week to history, validates slots, resets for next week.
+Saves week to history (incl. quantities and base overrides), validates slots, resets for next week. Re-finalizing an edited history week updates the existing entry (upsert by week start date).
 
 ## Setup
 

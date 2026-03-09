@@ -63,14 +63,12 @@ router.put('/current/slot', async (req, res) => {
 router.post('/finalize', async (req, res) => {
   try {
     const current = await readJSON('current-week.json');
-    if (current.finalized) {
-      return res.status(400).json({ error: 'Week already finalized' });
-    }
-
     const weekData = {
       weekStart: current.weekStart,
       weekEnd: current.weekEnd,
       days: current.plan,
+      quantities: current.quantities || {},
+      baseOverrides: current.baseOverrides || {},
     };
     await appendToHistory(weekData);
 
@@ -104,8 +102,8 @@ router.post('/finalize', async (req, res) => {
 router.get('/history', async (req, res) => {
   try {
     const history = await readJSON('history.json');
-    const n = parseInt(req.query.weeks) || 3;
-    const weeks = history.weeks.slice(-n);
+    const n = parseInt(req.query.weeks) || 0;
+    const weeks = n > 0 ? history.weeks.slice(-n) : history.weeks;
     res.json({ weeks });
   } catch (err) {
     res.status(500).json({ error: err.message });

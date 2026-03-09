@@ -1,0 +1,48 @@
+{
+  "ingredients": [
+    { "id": "ing-atta", "name": "Atta (Wheat Flour)", "category": "staple", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 90, "alwaysInStock": true },
+    { "id": "ing-rice", "name": "Rice", "category": "staple", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 180, "alwaysInStock": true },
+    { "id": "ing-rice-biryani", "name": "Biryani Rice", "category": "staple", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 180, "alwaysInStock": false },
+    { "id": "ing-dal", "name": "Yellow Daal", "category": "staple", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 180, "alwaysInStock": true },
+    { "id": "ing-rajma", "name": "Rajma", "category": "staple", "purchaseUnit": "g", "purchaseQty": 500, "shelfLifeDays": 180, "alwaysInStock": false },
+    { "id": "ing-laal-chana", "name": "Laal Chana", "category": "staple", "purchaseUnit": "g", "purchaseQty": 500, "shelfLifeDays": 180, "alwaysInStock": false },
+    { "id": "ing-white-chana", "name": "Chole (White Chana)", "category": "staple", "purchaseUnit": "g", "purchaseQty": 500, "shelfLifeDays": 180, "alwaysInStock": false },
+    { "id": "ing-oil", "name": "Oil", "category": "staple", "purchaseUnit": "l", "purchaseQty": 1, "shelfLifeDays": 180, "alwaysInStock": true },
+
+    { "id": "ing-onion", "name": "Onion", "category": "vegetable", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 14 },
+    { "id": "ing-tomato", "name": "Tomato", "category": "vegetable", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 7 },
+    { "id": "ing-potato", "name": "Potato", "category": "vegetable", "purchaseUnit": "kg", "purchaseQty": 1, "shelfLifeDays": 14 },
+    { "id": "ing-palak", "name": "Palak (Spinach)", "category": "vegetable", "purchaseUnit": "bunch", "purchaseQty": 1, "shelfLifeDays": 3 },
+    { "id": "ing-bhindi", "name": "Bhindi (Okra)", "category": "vegetable", "purchaseUnit": "g", "purchaseQty": 250, "shelfLifeDays": 4 },
+    { "id": "ing-gobhi", "name": "Gobhi (Cauliflower)", "category": "vegetable", "purchaseUnit": "pc", "purchaseQty": 1, "shelfLifeDays": 5 },
+    { "id": "ing-cabbage", "name": "Cabbage", "category": "vegetable", "purchaseUnit": "nos", "purchaseQty": 1, "shelfLifeDays": 7 },
+    { "id": "ing-carrot", "name": "Carrot", "category": "vegetable", "purchaseUnit": "g", "purchaseQty": 250, "shelfLifeDays": 10 },
+    { "id": "ing-beans", "name": "Beans", "category": "vegetable", "purchaseUnit": "g", "purchaseQty": 250, "shelfLifeDays": 5 },
+    { "id": "ing-matar", "name": "Matar (Peas)", "category": "vegetable", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 30, "note": "frozen pack" },
+    { "id": "ing-mushroom", "name": "Mushroom", "category": "vegetable", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 4 },
+    { "id": "ing-capsicum", "name": "Capsicum", "category": "vegetable", "purchaseUnit": "nos", "purchaseQty": 1, "shelfLifeDays": 7 },
+    { "id": "ing-green-chilli", "name": "Green Chilli", "category": "vegetable", "purchaseUnit": "g", "purchaseQty": 100, "shelfLifeDays": 7 },
+    { "id": "ing-lemon", "name": "Lemon", "category": "vegetable", "purchaseUnit": "nos", "purchaseQty": 6, "shelfLifeDays": 14 },
+    { "id": "ing-coriander", "name": "Coriander (Dhaniya)", "category": "vegetable", "purchaseUnit": "bunch", "purchaseQty": 1, "shelfLifeDays": 5 },
+    { "id": "ing-ginger-garlic", "name": "Ginger Garlic Paste", "category": "spice", "purchaseUnit": "pk", "purchaseQty": 2, "shelfLifeDays": 30 },
+    { "id": "ing-garlic", "name": "Garlic", "category": "spice", "purchaseUnit": "box", "purchaseQty": 1, "shelfLifeDays": 30 },
+    { "id": "ing-jeera", "name": "Jeera Powder", "category": "spice", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 180, "alwaysInStock": true },
+
+    { "id": "ing-paneer", "name": "Paneer", "category": "dairy", "purchaseUnit": "pk", "purchaseQty": 2, "shelfLifeDays": 5 },
+    { "id": "ing-curd", "name": "Curd", "category": "dairy", "purchaseUnit": "g", "purchaseQty": 250, "shelfLifeDays": 5 },
+    { "id": "ing-milk", "name": "Milk", "category": "dairy", "purchaseUnit": "nos", "purchaseQty": 6, "shelfLifeDays": 3, "note": "packets" },
+    { "id": "ing-amul-cream", "name": "Amul Cream", "category": "dairy", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 14 },
+
+    { "id": "ing-eggs", "name": "Eggs", "category": "protein", "purchaseUnit": "nos", "purchaseQty": 10, "shelfLifeDays": 14 },
+    { "id": "ing-chicken-biryani", "name": "Chicken (Biryani Cut)", "category": "protein", "purchaseUnit": "g", "purchaseQty": 500, "shelfLifeDays": 2 },
+    { "id": "ing-chicken-curry", "name": "Chicken (Curry Cut)", "category": "protein", "purchaseUnit": "g", "purchaseQty": 500, "shelfLifeDays": 2 },
+
+    { "id": "ing-bread", "name": "Bread", "category": "bakery", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 5 },
+    { "id": "ing-pav", "name": "Pav", "category": "bakery", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 3 },
+
+    { "id": "ing-chilla-mix", "name": "Chilla Mix", "category": "ready-mix", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 90 },
+    { "id": "ing-upma-mix", "name": "Upma Mix", "category": "ready-mix", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 90 },
+    { "id": "ing-dosa-batter", "name": "Dosa Batter", "category": "ready-mix", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 5 },
+    { "id": "ing-noodles-mix", "name": "Noodles (Chings)", "category": "ready-mix", "purchaseUnit": "pk", "purchaseQty": 1, "shelfLifeDays": 180 }
+  ]
+}

@@ -104,7 +104,8 @@ router.post('/generate-plan', async (req, res) => {
       plan = validatePlan(plan, masterMeals);
     } catch (aiErr) {
       console.error('AI plan generation failed, falling back to rule-based:', aiErr.message);
-      plan = await generateWeeklyPlan(leftovers, preferences, history);
+      const fallback = await generateWeeklyPlan(leftovers, preferences, history);
+      plan = fallback.plan;
       source = 'rule-based';
     }
 

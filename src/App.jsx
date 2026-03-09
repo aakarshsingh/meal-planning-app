@@ -142,6 +142,83 @@ function WeekCalendarPicker({ selMonday, onSelect }) {
   );
 }
 
+function HistoryDropdown({ onLoadWeek }) {
+  const [open, setOpen] = useState(false);
+  const [weeks, setWeeks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  function handleOpen() {
+    setOpen(!open);
+    if (!open) {
+      setLoading(true);
+      fetch('/api/planner/history')
+        .then((r) => r.json())
+        .then((data) => {
+          setWeeks((data.weeks || []).slice().reverse());
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }
+
+  function formatWeekLabel(w) {
+    const start = new Date(w.weekStart + 'T00:00:00');
+    const end = new Date(w.weekEnd + 'T00:00:00');
+    return `${formatDateShort(start)} - ${formatDateShort(end)}`;
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={handleOpen}
+        className="text-xs px-3 py-1.5 rounded-lg border border-ink/15 text-ink/70 hover:bg-primary-light hover:text-primary transition-colors shrink-0 flex items-center gap-1"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        History
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-1 right-0 z-50 bg-white rounded-xl shadow-xl border border-ink/10 py-2 w-64 max-h-80 overflow-y-auto">
+          <h4 className="text-xs font-semibold text-ink/50 uppercase tracking-wide px-3 pb-2 border-b border-ink/10">
+            Past Weeks
+          </h4>
+          {loading && (
+            <div className="px-3 py-4 text-xs text-ink/40 text-center">Loading...</div>
+          )}
+          {!loading && weeks.length === 0 && (
+            <div className="px-3 py-4 text-xs text-ink/40 text-center">No history yet</div>
+          )}
+          {!loading && weeks.map((w, i) => (
+            <button
+              key={w.weekStart || i}
+              onClick={() => {
+                onLoadWeek(w);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-primary-light transition-colors flex items-center justify-between group"
+            >
+              <span className="text-sm text-ink">{formatWeekLabel(w)}</span>
+              <span className="text-[10px] text-ink/30 group-hover:text-primary">Edit</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StepIndicator({ currentStep, onStepClick }) {
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
@@ -208,6 +285,7 @@ function App() {
   const [aiOverrideUsed, setAiOverrideUsed] = useState(false);
   const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
   const [masterMealsVersion, setMasterMealsVersion] = useState(0);
+  const [editingHistoryWeek, setEditingHistoryWeek] = useState(false);
 
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
@@ -302,6 +380,31 @@ function App() {
 
   function handleStartFresh() {
     setResumePrompt(null);
+  }
+
+  function handleLoadHistoryWeek(weekData) {
+    // Load a finalized week back into the editor
+    setPlan(weekData.days || {});
+    setWeekMonday(weekData.weekStart);
+    setQuantities(weekData.quantities || {});
+    setBaseOverrides(weekData.baseOverrides || {});
+    setLeftovers([]);
+    setPreferences({
+      skipDays: [],
+      skipMeals: [],
+      specialRequests: [],
+      chickenCount: 2,
+    });
+    // Set aiPlanCache to empty object to prevent AI from overwriting the loaded plan
+    setAiPlanCache({});
+    setAiOverrideUsed(false);
+    setFreshAiSuggestions([]);
+    setEditingHistoryWeek(true);
+    setResumePrompt(null);
+    setFinalized(false);
+    setPlanReady(false);
+    setStep(2);
+    toastRef.current?.success('Loaded week for editing');
   }
 
   function handleStepClick(targetStep) {
@@ -427,7 +530,7 @@ function App() {
       .then(() => {
         setFinalized(true);
         setFinalizing(false);
-        toastRef.current?.success('Week finalized and saved to history!');
+        toastRef.current?.success(editingHistoryWeek ? 'Week updated in history!' : 'Week finalized and saved to history!');
         setTimeout(() => {
           setPlan(null);
           setPlanReady(false);
@@ -444,6 +547,7 @@ function App() {
           setAiOverrideUsed(false);
           setFreshAiSuggestions([]);
           setFinalized(false);
+          setEditingHistoryWeek(false);
           setStep(0);
         }, 2000);
       })
@@ -465,12 +569,15 @@ function App() {
 
           <WeekCalendarPicker selMonday={weekMonday} onSelect={setWeekMonday} />
 
-          <button
-            onClick={() => setShowManageMeals(true)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-ink/15 text-ink/70 hover:bg-primary-light hover:text-primary transition-colors shrink-0"
-          >
-            Manage Meals
-          </button>
+          <div className="flex items-center gap-2">
+            <HistoryDropdown onLoadWeek={handleLoadHistoryWeek} />
+            <button
+              onClick={() => setShowManageMeals(true)}
+              className="text-xs px-3 py-1.5 rounded-lg border border-ink/15 text-ink/70 hover:bg-primary-light hover:text-primary transition-colors shrink-0"
+            >
+              Manage Meals
+            </button>
+          </div>
         </div>
       </header>
 
@@ -497,6 +604,28 @@ function App() {
                 Resume
               </button>
             </div>
+          </div>
+        )}
+
+        {editingHistoryWeek && (
+          <div className="mb-4 bg-gold-light border border-gold/30 rounded-xl p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <p className="text-sm font-medium text-ink">Editing finalized week</p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingHistoryWeek(false);
+                setPlan(null);
+                setPlanReady(false);
+                setStep(0);
+              }}
+              className="text-xs px-3 py-1 rounded-lg border border-ink/15 text-ink/50 hover:text-ink hover:bg-white/50 transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         )}
 
@@ -606,7 +735,7 @@ function App() {
                       disabled={finalizing}
                       className="px-8 py-3 rounded-xl bg-accent text-white font-semibold text-lg hover:bg-accent/90 shadow-md disabled:opacity-50 transition-colors"
                     >
-                      {finalizing ? 'Saving...' : 'Finalize Week'}
+                      {finalizing ? 'Saving...' : editingHistoryWeek ? 'Update Week' : 'Finalize Week'}
                     </button>
                   )}
                 </div>

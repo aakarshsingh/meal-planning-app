@@ -18,6 +18,13 @@ export async function writeJSON(filename, data) {
 
 export async function appendToHistory(weekData) {
   const history = await readJSON('history.json');
-  history.weeks.push(weekData);
+  const existingIndex = history.weeks.findIndex(
+    (w) => w.weekStart === weekData.weekStart
+  );
+  if (existingIndex >= 0) {
+    history.weeks[existingIndex] = weekData;
+  } else {
+    history.weeks.push(weekData);
+  }
   await writeJSON('history.json', history);
 }

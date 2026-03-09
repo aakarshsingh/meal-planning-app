@@ -7,8 +7,8 @@ const router = Router();
 router.post('/plan', async (req, res) => {
   try {
     const { leftovers, preferences, history } = req.body;
-    const plan = await generateWeeklyPlan(leftovers, preferences, history);
-    res.json({ plan });
+    const result = await generateWeeklyPlan(leftovers, preferences, history);
+    res.json({ plan: result.plan, constrainedSlots: result.constrainedSlots });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
