@@ -207,6 +207,7 @@ function App() {
   const [aiPlanCache, setAiPlanCache] = useState(null);
   const [aiOverrideUsed, setAiOverrideUsed] = useState(false);
   const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
+  const [masterMealsVersion, setMasterMealsVersion] = useState(0);
 
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
@@ -234,7 +235,7 @@ function App() {
       .then((r) => r.json())
       .then(setMasterMeals)
       .catch(() => toastRef.current?.error('Failed to load meals data'));
-  }, []);
+  }, [masterMealsVersion]);
 
   useEffect(() => {
     fetch('/api/planner/current')
@@ -526,6 +527,7 @@ function App() {
                 <MealGrid
                   leftovers={leftovers}
                   preferences={preferences}
+                  setPreferences={setPreferences}
                   plan={plan}
                   setPlan={setPlan}
                   quantities={quantities}
@@ -538,6 +540,7 @@ function App() {
                   setAiOverrideUsed={setAiOverrideUsed}
                   freshAiSuggestions={freshAiSuggestions}
                   setFreshAiSuggestions={setFreshAiSuggestions}
+                  masterMealsVersion={masterMealsVersion}
                   onBack={() => setStep(1)}
                   toastRef={toastRef}
                 />
@@ -615,7 +618,7 @@ function App() {
 
       {showManageMeals && (
         <ManageMealsModal
-          onClose={() => setShowManageMeals(false)}
+          onClose={() => { setShowManageMeals(false); setMasterMealsVersion((v) => v + 1); }}
           toastRef={toastRef}
         />
       )}

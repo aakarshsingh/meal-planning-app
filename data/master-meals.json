@@ -395,7 +395,7 @@
     },
     {
       "id": "meal-05",
-      "name": "Bhindi + Yellow Dal",
+      "name": "Bhindi",
       "type": "veg",
       "slot": "flexible",
       "base": "roti",
@@ -551,7 +551,7 @@
     },
     {
       "id": "meal-09",
-      "name": "Vegetable Pulao + Raita",
+      "name": "Vegetable Pulao",
       "type": "veg",
       "slot": "flexible",
       "base": "none",
@@ -774,7 +774,7 @@
     },
     {
       "id": "meal-15",
-      "name": "White Channa",
+      "name": "White Chole",
       "type": "veg",
       "slot": "flexible",
       "base": "rice",
@@ -808,7 +808,7 @@
     },
     {
       "id": "meal-16",
-      "name": "Aloo Gobi + Yellow Daal",
+      "name": "Aloo Gobi",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -983,7 +983,7 @@
     },
     {
       "id": "meal-22",
-      "name": "Aloo Beans + Yellow Dal",
+      "name": "Aloo Beans",
       "type": "veg",
       "slot": "flexible",
       "base": "paratha",
@@ -1025,6 +1025,14 @@
     {
       "id": "meal-23",
       "name": "Chicken Gravy with Cream",
+      "type": "chicken",
+      "slot": "flexible",
+      "base": "paratha",
+      "ingredients": []
+    },
+    {
+      "id": "meal-24",
+      "name": "Mutton Gravy",
       "type": "chicken",
       "slot": "flexible",
       "base": "paratha",
@@ -1080,17 +1088,37 @@
       "id": "side-01",
       "name": "Yellow Dal",
       "ingredients": [
-        { "ingredientId": "ing-dal", "qty": 100, "unit": "g" },
-        { "ingredientId": "ing-onion", "qty": 30, "unit": "g" },
-        { "ingredientId": "ing-tomato", "qty": 30, "unit": "g" }
+        {
+          "ingredientId": "ing-dal",
+          "qty": 100,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ing-onion",
+          "qty": 30,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ing-tomato",
+          "qty": 30,
+          "unit": "g"
+        }
       ]
     },
     {
       "id": "side-02",
       "name": "Raita",
       "ingredients": [
-        { "ingredientId": "ing-curd", "qty": 125, "unit": "g" },
-        { "ingredientId": "ing-onion", "qty": 20, "unit": "g" }
+        {
+          "ingredientId": "ing-curd",
+          "qty": 125,
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ing-onion",
+          "qty": 20,
+          "unit": "g"
+        }
       ]
     }
   ],

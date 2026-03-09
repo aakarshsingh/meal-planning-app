@@ -31,12 +31,14 @@
 - **Breakfast auto-rotation** with manual override via modal
 - **Dual-category items** — Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha)
 - **Fruit row** in the grid (separate from meals), fruits searchable in pantry stock
+- **Special requests as hard constraints** — Type "Have Poori on Saturday" or "Chicken Gravy on Wed and Fri, two different kinds" — both rule-based engine and AI enforce them exactly
 - **Smart suggestions** — No repeats within the week, avoids last 2 weeks' history, uses leftovers first
 - **Pre-optimized grocery list** — AI fixes quantities before display (Mushroom→200g, Coriander→1 bunch), bulk buy tips
 - **Editable grocery items** — Pencil icon + click to edit qty/unit, remove with x button
 - **Copyable outputs** — Day-wise meal chart + grocery list as WhatsApp-friendly text
 - **History tracking** — Saves finalized weeks, learns over time
-- **Manage Meals** — CRUD for all categories (Breakfasts, Drinks, Mains, Sides, Fruits). Inline edit with suggestedSide selector. Closes only on cross/ESC. Batch add support
+- **Manage Meals** — CRUD for all categories (Breakfasts, Drinks, Mains, Sides, Fruits). Inline edit with suggestedSide selector. Closes only on cross/ESC. Batch add support. New items reflect immediately in grid
+- **Unskip slots on grid** — Skipped cells show X on hover to revive them for planning
 - **Clickable step indicators** — Navigate back to Pantry Stock or Preferences anytime
 - **No wasted API calls** — All AI state cached in App.jsx. Back to Edit → no re-call. All days skipped → noOp
 - **Toast notifications** — Red errors, green success, yellow warnings

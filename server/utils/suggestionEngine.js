@@ -78,7 +78,102 @@ function shuffle(arr) {
   return a;
 }
 
-function pickBreakfasts(breakfasts, activeDays, leftovers, preferences) {
+// Parse special requests like "Have Poori Aloo Subzi on Saturday" or
+// "Have Chicken Gravy on Wednesday and Friday" into concrete constraints.
+// Returns { breakfast: { Day: mealId }, lunch_dinner: { Day: [mealIds] } }
+function parseSpecialRequests(specialRequests, masterMeals) {
+  if (!specialRequests || specialRequests.length === 0) return { breakfast: {}, lunch_dinner: {} };
+
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayAliases = {
+    mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+    fri: 'Friday', sat: 'Saturday', monday: 'Monday', tuesday: 'Tuesday',
+    wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
+  };
+
+  // Build a lookup: lowercase name -> meal object (with source category)
+  const allItems = [];
+  for (const b of masterMeals.breakfasts || []) {
+    allItems.push({ ...b, _cat: 'breakfast' });
+  }
+  for (const m of masterMeals.meals || []) {
+    allItems.push({ ...m, _cat: 'meal' });
+  }
+
+  const constraints = { breakfast: {}, lunch_dinner: {} };
+
+  for (const req of specialRequests) {
+    // Extract day names from the request
+    const reqLower = req.toLowerCase();
+    const mentionedDays = [];
+    for (const [alias, dayName] of Object.entries(dayAliases)) {
+      // Match whole word only
+      const regex = new RegExp(`\\b${alias}\\b`, 'i');
+      if (regex.test(reqLower) && !mentionedDays.includes(dayName)) {
+        mentionedDays.push(dayName);
+      }
+    }
+    if (mentionedDays.length === 0) continue;
+
+    // Try to find matching meal by name (fuzzy: check if meal name words appear in request)
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const item of allItems) {
+      const itemWords = item.name.toLowerCase().split(/[\s+]+/).filter((w) => w.length > 2);
+      let matchCount = 0;
+      for (const word of itemWords) {
+        if (reqLower.includes(word)) matchCount++;
+      }
+      // Require at least 1 significant word match and better than current best
+      if (matchCount > 0 && matchCount > bestScore) {
+        bestScore = matchCount;
+        bestMatch = item;
+      }
+      // Also try exact substring match
+      if (reqLower.includes(item.name.toLowerCase())) {
+        bestMatch = item;
+        bestScore = 999; // Exact match wins
+      }
+    }
+
+    if (!bestMatch) continue;
+
+    // Check for "different kinds" / "two different" modifier
+    const wantsDifferent = /\bdifferent\b/i.test(req) || /\btwo\s+different\b/i.test(req);
+
+    if (wantsDifferent && mentionedDays.length > 1 && bestMatch._cat === 'meal') {
+      // Find all meals of the same type (e.g., all chicken meals)
+      const sameType = allItems.filter((item) => item._cat === 'meal' && item.type === bestMatch.type);
+      const usedIds = new Set();
+      for (const day of mentionedDays) {
+        // Pick a different meal of the same type for each day
+        const available = sameType.filter((m) => !usedIds.has(m.id));
+        const pick = available.length > 0 ? available[0] : sameType[0];
+        if (!constraints.lunch_dinner[day]) constraints.lunch_dinner[day] = [];
+        if (!constraints.lunch_dinner[day].includes(pick.id)) {
+          constraints.lunch_dinner[day].push(pick.id);
+        }
+        usedIds.add(pick.id);
+      }
+    } else {
+      for (const day of mentionedDays) {
+        if (bestMatch._cat === 'breakfast') {
+          constraints.breakfast[day] = bestMatch.id;
+        } else {
+          if (!constraints.lunch_dinner[day]) constraints.lunch_dinner[day] = [];
+          if (!constraints.lunch_dinner[day].includes(bestMatch.id)) {
+            constraints.lunch_dinner[day].push(bestMatch.id);
+          }
+        }
+      }
+    }
+  }
+
+  return constraints;
+}
+
+function pickBreakfasts(breakfasts, activeDays, leftovers, preferences, constraints = {}) {
   const leftoverIds = getLeftoverIngredientIds(leftovers);
   const result = {};
 
@@ -104,6 +199,13 @@ function pickBreakfasts(breakfasts, activeDays, leftovers, preferences) {
       continue;
     }
 
+    // Honor hard constraint from special requests
+    if (constraints[day]) {
+      result[day] = [constraints[day]];
+      lastBfId = constraints[day];
+      continue;
+    }
+
     // Find next breakfast that isn't the same as last
     let chosen = null;
     for (let i = 0; i < pool.length; i++) {
@@ -121,7 +223,7 @@ function pickBreakfasts(breakfasts, activeDays, leftovers, preferences) {
   return result;
 }
 
-function pickMeals(allMeals, activeDays, leftovers, preferences, history, config) {
+function pickMeals(allMeals, activeDays, leftovers, preferences, history, config, constraints = {}) {
   const leftoverIds = getLeftoverIngredientIds(leftovers);
   const noRepeatWeeks = config.rules.noRepeatWithinWeeks || 3;
   const chickenTarget = config.rules.chickenPerWeek || 2;
@@ -161,10 +263,33 @@ function pickMeals(allMeals, activeDays, leftovers, preferences, history, config
   let chickenCount = 0;
   let lastBase = null;
 
-  // First pass: place chicken meals
+  // Pass 0: Pre-place hard constraints from special requests
+  for (const [day, mealIds] of Object.entries(constraints)) {
+    for (const mealId of mealIds) {
+      const meal = allMeals.find((m) => m.id === mealId);
+      if (!meal) continue;
+      // Find an open slot for this day (prefer lunch first, then dinner)
+      for (const mealType of ['lunch', 'dinner']) {
+        if (plan[day][mealType]) continue; // slot taken
+        if (meal.slot === 'dinner' && mealType !== 'dinner') continue;
+        plan[day][mealType] = mealId;
+        usedThisWeek.add(mealId);
+        if (meal.type === 'chicken') chickenCount++;
+        lastBase = meal.base;
+        break;
+      }
+    }
+  }
+
+  // Adjust chicken target: don't over-place chicken beyond what constraints already set
+  const remainingChicken = Math.max(0, chickenTarget - chickenCount);
+
+  // First pass: place chicken meals (only in non-constrained slots)
+  let chickenPlaced = 0;
   const chickenSlots = shuffle([...slots]);
   for (const slot of chickenSlots) {
-    if (chickenCount >= chickenTarget) break;
+    if (chickenPlaced >= remainingChicken) break;
+    if (plan[slot.day][slot.mealType]) continue; // already filled by constraint
     if (plan[slot.day].lunch || plan[slot.day].dinner) {
       // Don't put two chicken in same day if possible
       const otherSlot = slot.mealType === 'lunch' ? 'dinner' : 'lunch';
@@ -177,11 +302,10 @@ function pickMeals(allMeals, activeDays, leftovers, preferences, history, config
 
     for (const cm of chickenMeals) {
       if (usedThisWeek.has(cm.id)) continue;
-      // Check slot compatibility (dinner-only meals)
       if (cm.slot === 'dinner' && slot.mealType !== 'dinner') continue;
       plan[slot.day][slot.mealType] = cm.id;
       usedThisWeek.add(cm.id);
-      chickenCount++;
+      chickenPlaced++;
       lastBase = cm.base;
       break;
     }
@@ -255,9 +379,12 @@ export async function generateWeeklyPlan(leftovers = [], preferences = {}, histo
   const skipDays = preferences.skipDays || [];
   const activeDays = DAYS.filter((d) => !skipDays.includes(d));
 
+  // Parse special requests into hard constraints
+  const specialConstraints = parseSpecialRequests(preferences.specialRequests, masterMeals);
+
   // Generate each component
-  const breakfasts = pickBreakfasts(masterMeals.breakfasts, activeDays, leftovers, preferences);
-  const meals = pickMeals(masterMeals.meals, activeDays, leftovers, preferences, history, config);
+  const breakfasts = pickBreakfasts(masterMeals.breakfasts, activeDays, leftovers, preferences, specialConstraints.breakfast);
+  const meals = pickMeals(masterMeals.meals, activeDays, leftovers, preferences, history, config, specialConstraints.lunch_dinner);
   const fruits = pickFruits(masterMeals.fruits, activeDays, preferences);
 
   // Assemble plan

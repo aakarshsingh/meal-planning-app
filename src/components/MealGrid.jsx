@@ -22,7 +22,7 @@ const DRINK_ICONS = {
   'Nimbu Pani': '\u{1F34B}',
 };
 
-function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, aiPlanCache, setAiPlanCache, aiOverrideUsed, setAiOverrideUsed, freshAiSuggestions, setFreshAiSuggestions, onBack, toastRef }) {
+function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, aiPlanCache, setAiPlanCache, aiOverrideUsed, setAiOverrideUsed, freshAiSuggestions, setFreshAiSuggestions, masterMealsVersion, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
@@ -42,7 +42,7 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
       .then((r) => r.json())
       .then((data) => setMasterMeals(data))
       .catch(() => {});
-  }, []);
+  }, [masterMealsVersion]);
 
   // Check if all days/meals are skipped
   const allSkipped = useMemo(() => {
@@ -243,6 +243,40 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     if (skipDays.includes(day)) return true;
     if (mealType === 'morning') return isSlotSkipped(day, 'breakfast');
     return skipMeals.some((s) => s.day === day && s.mealType === mealType);
+  }
+
+  function handleUnskip(day, mealType) {
+    if (!setPreferences) return;
+    setPreferences((prev) => {
+      const next = { ...prev };
+      if (mealType === 'day') {
+        // Remove entire day skip
+        next.skipDays = (prev.skipDays || []).filter((d) => d !== day);
+        // Also remove any individual meal skips for that day
+        next.skipMeals = (prev.skipMeals || []).filter((s) => s.day !== day);
+      } else {
+        // Remove individual meal skip
+        const actualType = mealType === 'morning' ? 'breakfast' : mealType;
+        next.skipMeals = (prev.skipMeals || []).filter(
+          (s) => !(s.day === day && s.mealType === actualType)
+        );
+      }
+      return next;
+    });
+    // Initialize the slot in the plan if needed
+    if (plan && plan[day]) {
+      const newPlan = { ...plan };
+      newPlan[day] = { ...newPlan[day] };
+      if (mealType === 'day') {
+        // Initialize all slots for the day
+        if (!newPlan[day].breakfast) newPlan[day].breakfast = [];
+        if (!newPlan[day].drinks) newPlan[day].drinks = [];
+        if (!newPlan[day].lunch) newPlan[day].lunch = null;
+        if (!newPlan[day].dinner) newPlan[day].dinner = null;
+        if (!newPlan[day].fruit) newPlan[day].fruit = [];
+      }
+      setPlan(newPlan);
+    }
   }
 
   function getMealCategory(mealId) {
@@ -480,10 +514,18 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
     const items = getSlotItems(day, mealType);
 
     if (skipped) {
+      const isDaySkip = skipDays.includes(day);
       return (
         <td key={`${day}-${mealType}`} className="p-1 align-top">
-          <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[70px] flex items-center justify-center text-xs text-gray-300">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[70px] flex items-center justify-center text-xs text-gray-300 relative group">
             skipped
+            <button
+              onClick={() => handleUnskip(day, isDaySkip ? 'day' : mealType)}
+              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-gray-200 text-gray-400 hover:bg-accent hover:text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              title={isDaySkip ? `Unskip ${day}` : 'Unskip this slot'}
+            >
+              &times;
+            </button>
           </div>
         </td>
       );
@@ -585,10 +627,18 @@ function MealGrid({ leftovers, preferences, plan, setPlan, quantities, setQuanti
 
   function renderSingleCell(day, mealType, skipped) {
     if (skipped) {
+      const isDaySkip = skipDays.includes(day);
       return (
         <td key={`${day}-${mealType}`} className="p-1 align-top">
-          <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[70px] flex items-center justify-center text-xs text-gray-300">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg min-h-[70px] flex items-center justify-center text-xs text-gray-300 relative group">
             skipped
+            <button
+              onClick={() => handleUnskip(day, isDaySkip ? 'day' : mealType)}
+              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-gray-200 text-gray-400 hover:bg-accent hover:text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              title={isDaySkip ? `Unskip ${day}` : 'Unskip this slot'}
+            >
+              &times;
+            </button>
           </div>
         </td>
       );

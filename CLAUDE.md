@@ -79,7 +79,7 @@ meal-planner/
 
 ## State Management
 
-- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions` are owned by App.jsx, not MealGrid
+- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion` are owned by App.jsx, not MealGrid
 - **Persistence**: qty/base/AI cache persist across Edit ↔ Review transitions — no extra API calls on "Back to Edit"
 - **Auto-save**: current-week.json saves quantities and baseOverrides (debounced 2s)
 - **Resume**: Restores quantities and baseOverrides from saved state
@@ -114,12 +114,14 @@ meal-planner/
 ## Suggestion Engine Logic
 
 1. Load last 2 weeks from history.json → get used meal IDs
-2. Filter master meals: exclude recently used, exclude already-in-current-week
-3. Score candidates: +3 uses leftover ingredient, +1 alternates rice/paratha base, -10 already this week
-4. Enforce: exactly N chicken meals (from config), rest veg/egg
-5. Breakfast: rotate through 11 options, prefer ones using leftovers
-6. Fruit: rotate, no same fruit on consecutive days
-7. Fallback to Claude API if rule-based engine can't fill all slots
+2. Parse special requests into hard constraints (e.g., "Have Poori on Saturday" → breakfast constraint, "Chicken Gravy on Wed and Fri" → lunch/dinner constraints). Handles "two different kinds" by placing distinct meals of the same type
+3. Filter master meals: exclude recently used, exclude already-in-current-week
+4. Score candidates: +3 uses leftover ingredient, +1 alternates rice/paratha base, -10 already this week
+5. Pre-place constrained meals (from special requests) before any random fill
+6. Enforce: exactly N chicken meals (from config, adjusted for constrained chicken), rest veg/egg
+7. Breakfast: rotate through 11 options, prefer ones using leftovers. Honor breakfast constraints first
+8. Fruit: rotate, no same fruit on consecutive days
+9. Fallback to Claude API if rule-based engine can't fill all slots
 
 ## Claude API Usage
 
@@ -140,8 +142,8 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - **Header**: Calendar dropdown week picker (local timezone safe), "Manage Meals" button
 - **Step indicators**: Clickable — can navigate back to Pantry Stock or Preferences from any later step
 - **Screen 1**: Autocomplete ingredient search (ingredients + fruits), fraction qty support
-- **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, chicken count stepper
-- **Screen 3 Part 1** (Edit): HTML table grid, purple-bordered AI-placed cells, drag-and-drop swap between days, click empty slot → SwapModal, base swap buttons (incl. "No base"), smart qty buttons, Clear All / Restore, "Review Plan" button
+- **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, chicken count stepper, special requests (free text, parsed into hard constraints)
+- **Screen 3 Part 1** (Edit): HTML table grid, purple-bordered AI-placed cells, drag-and-drop swap between days, click empty slot → SwapModal, base swap buttons (incl. "No base"), smart qty buttons, skipped cells show X on hover to unskip, Clear All / Restore, "Review Plan" button
 - **Screen 3 Part 2** (Review): Weekly Chart (with base/qty overrides) + pre-optimized Grocery List + "Back to Edit" (no API call, AI cached) + "Finalize Week"
 - **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else (full filtered list). Search filter, "Add & Use" for new dishes.
 - **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Sides, Fruits). Closes only on cross/ESC. Inline edit with suggestedSide selector for mains. "Also add to Mains" checkbox for breakfasts. Add form stays open for batch adds.
@@ -171,5 +173,8 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - Date handling uses `toLocalDateStr()` — never `toISOString().slice(0,10)` (UTC shift bug in IST)
 - Qty/base overrides and AI cache are lifted to App.jsx so they persist across Edit ↔ Review transitions
 - ManageMealsModal closes only via cross button or ESC — not on backdrop click
+- When ManageMealsModal closes, `masterMealsVersion` increments → both App.jsx and MealGrid re-fetch master meals so newly added items appear immediately
 - Grocery list waits for AI optimization before rendering (no partial display)
 - No limit on breakfast/drink items per day — user can add as many as desired
+- Special requests in preferences are hard constraints — both rule-based engine and AI prompt enforce them
+- Skipped slots on Screen 3 can be unskipped via hover X button — revives the slot for planning

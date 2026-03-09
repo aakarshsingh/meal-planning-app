@@ -76,6 +76,7 @@ Planning rules:
 7. Lighter meals (egg/breakfast-style) work well for weeknight dinners
 8. Each day needs: 1 breakfast, 1 lunch, 1 dinner, and 1-2 fruits
 9. Set skipped days/meals to null based on preferences above
+10. CRITICAL — HARD CONSTRAINTS: If special requests mention a specific meal on a specific day (e.g., "Have Poori on Saturday", "Have Chicken Gravy on Wednesday and Friday"), you MUST place that exact meal on that exact day. These are non-negotiable. If "two different kinds" is mentioned for a type (e.g., chicken), use two DIFFERENT meal IDs of that type on the specified days
 
 Respond with ONLY valid JSON, no explanation:
 {
