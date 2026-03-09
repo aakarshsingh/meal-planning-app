@@ -17,9 +17,9 @@
 - **Side dishes** — Optional sides (Yellow Dal, Raita) linked to meals via `suggestedSide`. Side ingredients auto-included in grocery calculation
 - **Week selector** — Calendar dropdown in header, click any Monday to set the week
 - **3-screen planning flow** — Pantry Stock → Preferences → Weekly grid
-- **Drag-and-drop swapping** — Drag meals between days within the same row to swap positions
+- **Drag-and-drop swapping** — Drag meals between days within the same row, plus lunch↔dinner swaps. AI indicators follow
 - **Click-to-add meal grid** — HTML table layout, click empty slot to open modal with AI + rule-based + full list
-- **Swap modal with 3 sections** — AI Suggestions, Rule-based Suggestions, Everything Else (filterable)
+- **Swap modal with 3 sections** — AI Suggestions, Rule-based Suggestions, Everything Else. Sticky search filters all sections
 - **Building blocks** — Meals shown as "Main + Base" (e.g., "Palak Paneer + Roti"), base changeable per cell
 - **No-base option** — Dishes like Biryani, Veg Pulao need no base accompaniment
 - **Smart qty** — Qty +/- only for countable items (roti/paratha/pav, certain breakfasts like Bread, Chilla, Poori)
@@ -65,13 +65,13 @@ Autocomplete from ingredient master + fruits. Enter quantities of ingredients yo
 - Day rows with inline breakfast/lunch/dinner skip checkboxes
 - Clickable quick prompt chips: "No rice this week", "Light meals on weekdays", etc.
 - Meat count stepper (default 2) — covers chicken, mutton, etc.
-- Summary card with active days/meals/chicken/pantry item counts
+- Summary card with active days/meals/meat/pantry item counts
 
 ### Screen 3 — Meal Planner Grid
 Weekly HTML table: Mon–Sat x Breakfast, Lunch, Dinner, Fruit.
 
 - **Click empty slot** → SwapModal with 3 sections: AI, Suggestions, Everything Else
-- **Drag-and-drop** — Drag any meal to another day's same row to swap
+- **Drag-and-drop** — Drag any meal to another day's same row to swap, or swap lunch↔dinner (same/different day)
 - **Swap button** on existing meals → same modal for replacement
 - **Base swap** — Inline rice/roti/paratha/pav/none buttons per meal card
 - **Meal titles** — "Main + Base" format (e.g., "Palak Paneer + Roti"), with side dish label if linked

@@ -131,11 +131,16 @@ function SwapModal({
       .map((m) => ({ ...m, mealId: m.id, itemType: 'meal' }));
   }
 
-  // Apply search filter
-  if (searchFilter) {
-    const q = searchFilter.toLowerCase();
-    everythingElse = everythingElse.filter((m) => m.name.toLowerCase().includes(q));
-  }
+  // Total unfiltered count (for deciding whether to show search input)
+  const totalItems = ruleSuggestions.length + aiCachedSuggestions.length + freshSuggestions.length + everythingElse.length;
+
+  // Apply search filter across ALL sections
+  const q = searchFilter.toLowerCase();
+  const nameMatch = (item) => !q || item.name?.toLowerCase().includes(q);
+  const filteredRuleSuggestions = q ? ruleSuggestions.filter(nameMatch) : ruleSuggestions;
+  const filteredAiCached = q ? aiCachedSuggestions.filter(nameMatch) : aiCachedSuggestions;
+  const filteredFresh = q ? freshSuggestions.filter(nameMatch) : freshSuggestions;
+  const filteredEverythingElse = q ? everythingElse.filter(nameMatch) : everythingElse;
 
   function handleFreshAiCall() {
     setFreshAiLoading(true);
@@ -229,15 +234,26 @@ function SwapModal({
             </div>
           )}
 
+          {/* Search filter — shown when there are enough total items */}
+          {totalItems > 5 && (
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search meals..."
+              className="w-full px-3 py-1.5 rounded-lg border border-ink/15 focus:outline-none focus:ring-1 focus:ring-primary text-sm text-ink placeholder-ink/30 sticky top-0 z-10 bg-white"
+            />
+          )}
+
           {/* Section 1: AI Suggestions */}
-          {(aiCachedSuggestions.length > 0 || freshSuggestions.length > 0 || (!aiOverrideUsed && freshSuggestions.length === 0)) && (
+          {(filteredAiCached.length > 0 || filteredFresh.length > 0 || (!q && !aiOverrideUsed && freshSuggestions.length === 0)) && (
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] text-purple-500 uppercase font-semibold tracking-wide">AI Suggestions</span>
                 <div className="flex-1 h-px bg-purple-100" />
               </div>
 
-              {aiCachedSuggestions.map((s) => (
+              {filteredAiCached.map((s) => (
                 <button
                   key={s.mealId}
                   onClick={() => onSelect(s.mealId)}
@@ -251,7 +267,7 @@ function SwapModal({
                 </button>
               ))}
 
-              {freshSuggestions.map((s) => (
+              {filteredFresh.map((s) => (
                 <button
                   key={s.mealId}
                   onClick={() => onSelect(s.mealId)}
@@ -266,7 +282,7 @@ function SwapModal({
                 </button>
               ))}
 
-              {!aiOverrideUsed && freshSuggestions.length === 0 && !freshAiLoading && (
+              {!q && !aiOverrideUsed && freshSuggestions.length === 0 && !freshAiLoading && (
                 <button
                   onClick={handleFreshAiCall}
                   className="w-full text-center py-2 rounded-lg border border-dashed border-purple-300 text-purple-500 text-xs hover:bg-purple-50 hover:border-purple-400 transition-colors"
@@ -284,14 +300,14 @@ function SwapModal({
           )}
 
           {/* Section 2: Rule-based Suggestions */}
-          {ruleSuggestions.length > 0 && (
+          {filteredRuleSuggestions.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] text-primary uppercase font-semibold tracking-wide">Suggestions</span>
                 <div className="flex-1 h-px bg-primary/20" />
               </div>
 
-              {ruleSuggestions.map((s) => (
+              {filteredRuleSuggestions.map((s) => (
                 <button
                   key={s.mealId}
                   onClick={() => onSelect(s.mealId)}
@@ -315,19 +331,9 @@ function SwapModal({
               <div className="flex-1 h-px bg-ink/10" />
             </div>
 
-            {everythingElse.length > 5 && (
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Filter..."
-                className="w-full px-3 py-1.5 mb-2 rounded-lg border border-ink/15 focus:outline-none focus:ring-1 focus:ring-primary text-sm text-ink placeholder-ink/30"
-              />
-            )}
-
-            {everythingElse.length > 0 ? (
+            {filteredEverythingElse.length > 0 ? (
               <div className="space-y-1">
-                {everythingElse.map((item) => {
+                {filteredEverythingElse.map((item) => {
                   const icon = getItemIcon(item);
                   return (
                     <button
@@ -348,11 +354,11 @@ function SwapModal({
                 })}
               </div>
             ) : (
-              <p className="text-xs text-ink/30 text-center py-2">All items are already in use</p>
+              <p className="text-xs text-ink/30 text-center py-2">{q ? 'No matches' : 'All items are already in use'}</p>
             )}
           </div>
 
-          {!loading && ruleSuggestions.length === 0 && aiCachedSuggestions.length === 0 && freshSuggestions.length === 0 && everythingElse.length === 0 && (
+          {!loading && filteredRuleSuggestions.length === 0 && filteredAiCached.length === 0 && filteredFresh.length === 0 && filteredEverythingElse.length === 0 && !q && (
             <p className="text-sm text-ink/40 text-center py-4">No options available</p>
           )}
         </div>

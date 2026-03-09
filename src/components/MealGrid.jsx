@@ -420,22 +420,25 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
     const src = dragSource;
     setDragSource(null);
 
-    // Only allow swap within same row type
-    if (src.mealType !== mealType) return;
     // Same cell — no-op
-    if (src.day === day) return;
+    if (src.day === day && src.mealType === mealType) return;
+
+    // Allow swap: same row type across days, OR lunch↔dinner (same or different day)
+    const isLunchDinner = (t) => t === 'lunch' || t === 'dinner';
+    const bothLunchDinner = isLunchDinner(src.mealType) && isLunchDinner(mealType);
+    if (src.mealType !== mealType && !bothLunchDinner) return;
 
     const newPlan = { ...plan };
     newPlan[src.day] = { ...newPlan[src.day] };
-    newPlan[day] = { ...newPlan[day] };
+    if (src.day !== day) newPlan[day] = { ...newPlan[day] };
 
-    if (mealType === 'lunch' || mealType === 'dinner') {
-      // Swap single-cell meals
-      const temp = newPlan[src.day][mealType];
-      newPlan[src.day][mealType] = newPlan[day][mealType];
+    if (bothLunchDinner) {
+      // Swap lunch/dinner cells (same or different day)
+      const temp = newPlan[src.day][src.mealType];
+      newPlan[src.day][src.mealType] = newPlan[day][mealType];
       newPlan[day][mealType] = temp;
-      // Swap base overrides too
-      const srcKey = `${src.day}-${mealType}`;
+      // Swap base overrides
+      const srcKey = `${src.day}-${src.mealType}`;
       const dstKey = `${day}-${mealType}`;
       setBaseOverrides((prev) => {
         const next = { ...prev };
@@ -444,6 +447,15 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
         next[dstKey] = tempBase;
         if (next[srcKey] === undefined) delete next[srcKey];
         if (next[dstKey] === undefined) delete next[dstKey];
+        return next;
+      });
+      // Swap AI placed indicators
+      setAiPlacedSlots((prev) => {
+        const next = new Set(prev);
+        const srcHad = prev.has(srcKey);
+        const dstHad = prev.has(dstKey);
+        if (srcHad) next.add(dstKey); else next.delete(dstKey);
+        if (dstHad) next.add(srcKey); else next.delete(srcKey);
         return next;
       });
     } else if (mealType === 'morning') {
@@ -460,8 +472,9 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
       newPlan[day].fruit = temp;
     }
 
+    const label = src.day === day ? `Swapped ${src.mealType} ↔ ${mealType}` : `Swapped ${src.day} ↔ ${day}`;
     setPlan(newPlan);
-    toastRef?.current?.success(`Swapped ${src.day} ↔ ${day}`);
+    toastRef?.current?.success(label);
   }
 
   function handleDragEnd() {

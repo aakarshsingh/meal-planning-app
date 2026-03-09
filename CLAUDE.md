@@ -75,7 +75,7 @@ meal-planner/
 - **Within-week uniqueness**: No same meal twice in a single week
 - **Fruits**: Shown as a separate row in the meal grid, editable in pantry stock screen, 6 fruits available
 - **Grocery calculation**: Dynamically calculated from planned meals (with base overrides + side dishes), subtract leftovers, round up to purchase units, group by category, AI-optimized before display
-- **Drag-and-drop**: Users can drag meals between days within the same row (breakfast, lunch, dinner, fruit) to swap
+- **Drag-and-drop**: Users can drag meals between days within the same row, plus lunch↔dinner swaps (same or different day). AI pick indicators follow swapped cells
 
 ## State Management
 
@@ -142,10 +142,10 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - **Header**: Calendar dropdown week picker (local timezone safe), "Manage Meals" button
 - **Step indicators**: Clickable — can navigate back to Pantry Stock or Preferences from any later step
 - **Screen 1**: Autocomplete ingredient search (ingredients + fruits), fraction qty support
-- **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, chicken count stepper, special requests (free text, parsed into hard constraints)
-- **Screen 3 Part 1** (Edit): HTML table grid, purple-bordered AI-placed cells, drag-and-drop swap between days, click empty slot → SwapModal, base swap buttons (incl. "No base"), smart qty buttons, skipped cells show X on hover to unskip, Clear All / Restore, "Review Plan" button
+- **Screen 2**: Day rows with meal skip checkboxes, quick prompt chips, meat count stepper, special requests (free text, parsed into hard constraints)
+- **Screen 3 Part 1** (Edit): HTML table grid, purple-bordered AI-placed cells, drag-and-drop swap (same row across days + lunch↔dinner same/cross day), AI indicators follow swaps, click empty slot → SwapModal, base swap buttons (incl. "No base"), smart qty buttons, skipped cells show X on hover to unskip, Clear All / Restore, "Review Plan" button
 - **Screen 3 Part 2** (Review): Weekly Chart (with base/qty overrides) + pre-optimized Grocery List + "Back to Edit" (no API call, AI cached) + "Finalize Week"
-- **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else (full filtered list). Search filter, "Add & Use" for new dishes.
+- **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else. Sticky search filter at top filters all 3 sections. "Add & Use" for new dishes.
 - **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Sides, Fruits). Closes only on cross/ESC. Inline edit with suggestedSide selector for mains. "Also add to Mains" checkbox for breakfasts. Add form stays open for batch adds.
 - **GroceryList**: Pre-optimized (loading until AI fixes applied), pencil edit icon per item, per-item edit (qty/unit) and remove (x button)
 
