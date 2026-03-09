@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const TYPE_ICONS = { veg: '\u{1F331}', egg: '\u{1F95A}', meat: '\u{1F356}' };
 
 const FRUIT_ICONS = {
@@ -43,7 +45,9 @@ function formatTitle(meal) {
   return `${meal.name} + ${baseLabel}`;
 }
 
-function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName }) {
+function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName, sides, activeSideId, onSideChange }) {
+  const [showSidePicker, setShowSidePicker] = useState(false);
+
   if (!meal) return null;
 
   const isMeat = meal.type === 'meat';
@@ -68,11 +72,50 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName 
           <span className="font-medium text-ink leading-tight text-xs line-clamp-2">
             {formatTitle(meal)}
           </span>
-          {sideName && (
-            <span className="block text-[9px] text-ink/40 leading-tight mt-0.5">+ {sideName}</span>
+          {onSideChange ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowSidePicker((v) => !v); }}
+              className="block text-[9px] text-ink/40 leading-tight mt-0.5 hover:text-primary cursor-pointer"
+              title="Click to change side"
+            >
+              {sideName ? `+ ${sideName} \u270E` : '+ Add side \u270E'}
+            </button>
+          ) : (
+            sideName && (
+              <span className="block text-[9px] text-ink/40 leading-tight mt-0.5">+ {sideName}</span>
+            )
           )}
         </div>
       </div>
+
+      {/* Side dish picker */}
+      {showSidePicker && onSideChange && sides && (
+        <div className="flex gap-0.5 flex-wrap mb-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onSideChange(''); setShowSidePicker(false); }}
+            className={`text-[9px] px-1 py-0.5 rounded transition-colors ${
+              !activeSideId
+                ? 'bg-primary text-white'
+                : 'bg-primary/10 text-primary hover:bg-primary/20'
+            }`}
+          >
+            None
+          </button>
+          {sides.map((s) => (
+            <button
+              key={s.id}
+              onClick={(e) => { e.stopPropagation(); onSideChange(s.id); setShowSidePicker(false); }}
+              className={`text-[9px] px-1 py-0.5 rounded transition-colors ${
+                activeSideId === s.id
+                  ? 'bg-primary text-white'
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {hasBase && onBaseChange && (
         <div className="flex items-center gap-1 mb-1">

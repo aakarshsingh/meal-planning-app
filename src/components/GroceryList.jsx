@@ -35,12 +35,12 @@ const UNIT_LABELS = {
   pc: 'piece',
 };
 
-function GroceryList({ plan, leftovers, baseOverrides = {} }) {
-  const [groceryData, setGroceryData] = useState(null);
+function GroceryList({ plan, leftovers, baseOverrides = {}, sideOverrides = {}, groceryCache, setGroceryCache }) {
+  const [groceryData, setGroceryDataLocal] = useState(groceryCache?.groceryData || null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState(null);
-  const [removedItems, setRemovedItems] = useState(new Set());
+  const [aiSuggestions, setAiSuggestions] = useState(groceryCache?.aiSuggestions || null);
+  const [removedItems, setRemovedItems] = useState(() => new Set(groceryCache?.removedItems || []));
   const [editingItem, setEditingItem] = useState(null);
   const [editQty, setEditQty] = useState('');
   const [editUnit, setEditUnit] = useState('');
@@ -52,9 +52,30 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
   const editRef = useRef(null);
   const addNameRef = useRef(null);
 
+  // Wrapper to sync grocery data to parent cache
+  function setGroceryData(updater) {
+    setGroceryDataLocal((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return next;
+    });
+  }
+
+  // Sync all grocery edits to parent cache whenever they change
+  useEffect(() => {
+    if (!setGroceryCache || !groceryData) return;
+    setGroceryCache({
+      groceryData,
+      aiSuggestions,
+      removedItems: [...removedItems],
+    });
+  }, [groceryData, aiSuggestions, removedItems]);
+
   // Generate grocery list AND optimize with AI before showing
+  // Skip if we already have cached data from a previous render
   useEffect(() => {
     if (!plan) return;
+    if (groceryCache?.groceryData) return; // Already have cached data
+
     setLoading(true);
     setRemovedItems(new Set());
     setGroceryData(null);
@@ -62,7 +83,7 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
     fetch('/api/groceries/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, leftovers, baseOverrides }),
+      body: JSON.stringify({ plan, leftovers, baseOverrides, sideOverrides }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -278,7 +299,14 @@ function GroceryList({ plan, leftovers, baseOverrides = {} }) {
 
       {/* Add item form */}
       {showAddForm && (
-        <div className="mb-4 bg-cream/50 rounded-lg border border-ink/10 p-3">
+        <div className="mb-4 bg-cream/50 rounded-lg border border-ink/10 p-3 relative">
+          <button
+            onClick={() => setShowAddForm(false)}
+            className="absolute top-1.5 right-2 text-ink/30 hover:text-ink/60 text-lg leading-none"
+            title="Close"
+          >
+            &times;
+          </button>
           <div className="flex flex-wrap items-end gap-2">
             <div className="flex-1 min-w-[120px]">
               <label className="text-[10px] text-ink/50 uppercase tracking-wide">Name</label>

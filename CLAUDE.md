@@ -79,7 +79,7 @@ meal-planner/
 
 ## State Management
 
-- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion`, `editingHistoryWeek` are owned by App.jsx, not MealGrid
+- **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion`, `editingHistoryWeek`, `groceryCache` are owned by App.jsx, not MealGrid
 - **Persistence**: qty/base/AI cache persist across Edit ↔ Review transitions — no extra API calls on "Back to Edit"
 - **Auto-save**: current-week.json saves quantities and baseOverrides (debounced 2s)
 - **Resume**: Restores quantities and baseOverrides from saved state
@@ -100,10 +100,10 @@ meal-planner/
 - `ingredients[]`: id (ing-XXX), name, category (staple/vegetable/dairy/protein/bakery/ready-mix/spice), purchaseUnit, purchaseQty, shelfLifeDays, alwaysInStock (optional)
 
 ### history.json
-- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs], quantities{}, baseOverrides{}
+- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs], quantities{}, baseOverrides{}, groceryCache{}
 
 ### current-week.json
-- weekStart, weekEnd, leftovers[], preferences{}, plan{}, quantities{}, baseOverrides{}, groceryList[], finalized
+- weekStart, weekEnd, leftovers[], preferences{}, plan{}, quantities{}, baseOverrides{}, groceryList[], groceryCache{}, finalized
 
 ### config.json
 - household: servings, cuisine, planDays, mealSlots
@@ -147,7 +147,7 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - **Screen 3 Part 2** (Review): Weekly Chart (with base/qty overrides) + pre-optimized Grocery List + "Back to Edit" (no API call, AI cached) + "Finalize Week"
 - **SwapModal**: 3 sections — AI Suggestions, Rule-based Suggestions, Everything Else. Sticky search filter at top filters all 3 sections. "Add & Use" for new dishes.
 - **ManageMealsModal**: Categories (Breakfasts, Drinks, Mains, Sides, Fruits). Closes only on cross/ESC. Inline edit with suggestedSide selector for mains. "Also add to Mains" checkbox for breakfasts. Add form stays open for batch adds.
-- **GroceryList**: Pre-optimized (loading until AI fixes applied), pencil edit icon per item, per-item edit (qty/unit) and remove (x button), "+ Add Item" for custom grocery items
+- **GroceryList**: Pre-optimized (loading until AI fixes applied), pencil edit icon per item, per-item edit (qty/unit) and remove (x button), "+ Add Item" for custom grocery items (with close button), grocery edits persist to history
 
 ## Style Guide
 
@@ -179,5 +179,7 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - Special requests in preferences are hard constraints — both rule-based engine and AI prompt enforce them
 - Skipped slots on Screen 3 can be unskipped via hover X button — revives the slot for planning
 - History edit: loading a past week sets `aiPlanCache` to `{}` (truthy) to skip AI generation — preserves user's original meal choices
+- History edit: loading restores saved `groceryCache` so grocery edits (qty changes, removals, custom items) are preserved — no regeneration
 - History upsert: `appendToHistory` uses weekStart as key — re-finalizing updates the existing entry, not a duplicate
-- Finalize saves `quantities` and `baseOverrides` to history.json alongside meal data
+- Finalize saves `quantities`, `baseOverrides`, and `groceryCache` to history.json alongside meal data
+- Grocery cache invalidation skipped during history load via `skipGroceryInvalidation` ref — prevents the plan/override state changes from wiping the restored cache

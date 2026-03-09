@@ -286,6 +286,9 @@ function App() {
   const [freshAiSuggestions, setFreshAiSuggestions] = useState([]);
   const [masterMealsVersion, setMasterMealsVersion] = useState(0);
   const [editingHistoryWeek, setEditingHistoryWeek] = useState(false);
+  const [sideOverrides, setSideOverrides] = useState({});
+  // Lifted grocery state: persists across Edit ↔ Review transitions
+  const [groceryCache, setGroceryCache] = useState(null);
 
   const [weekMonday, setWeekMonday] = useState(() => {
     const now = new Date();
@@ -346,6 +349,7 @@ function App() {
         plan,
         quantities,
         baseOverrides,
+        sideOverrides,
         groceryList: [],
         finalized: false,
       };
@@ -356,7 +360,7 @@ function App() {
         body: JSON.stringify(currentWeek),
       }).catch(() => {});
     }, 2000);
-  }, [plan, leftovers, preferences, weekMonday, weekSaturdayStr, quantities, baseOverrides]);
+  }, [plan, leftovers, preferences, weekMonday, weekSaturdayStr, quantities, baseOverrides, sideOverrides]);
 
   useEffect(() => {
     autoSave();
@@ -364,6 +368,21 @@ function App() {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
   }, [autoSave]);
+
+  // Invalidate grocery cache when plan/overrides change (user edits meals)
+  const groceryCacheInitRef = useRef(true);
+  const skipGroceryInvalidation = useRef(false);
+  useEffect(() => {
+    if (groceryCacheInitRef.current) {
+      groceryCacheInitRef.current = false;
+      return;
+    }
+    if (skipGroceryInvalidation.current) {
+      skipGroceryInvalidation.current = false;
+      return;
+    }
+    setGroceryCache(null);
+  }, [plan, baseOverrides, sideOverrides]);
 
   function handleResume() {
     if (!resumePrompt) return;
@@ -373,6 +392,7 @@ function App() {
     if (resumePrompt.weekStart) setWeekMonday(resumePrompt.weekStart);
     if (resumePrompt.quantities) setQuantities(resumePrompt.quantities);
     if (resumePrompt.baseOverrides) setBaseOverrides(resumePrompt.baseOverrides);
+    if (resumePrompt.sideOverrides) setSideOverrides(resumePrompt.sideOverrides);
     setStep(2);
     setResumePrompt(null);
     toastRef.current?.success('Resumed previous plan');
@@ -384,6 +404,8 @@ function App() {
 
   function handleLoadHistoryWeek(weekData) {
     // Load a finalized week back into the editor
+    // Skip grocery cache invalidation for this batch of state changes
+    skipGroceryInvalidation.current = true;
     setPlan(weekData.days || {});
     setWeekMonday(weekData.weekStart);
     setQuantities(weekData.quantities || {});
@@ -395,10 +417,13 @@ function App() {
       specialRequests: [],
       chickenCount: 2,
     });
+    setSideOverrides(weekData.sideOverrides || {});
     // Set aiPlanCache to empty object to prevent AI from overwriting the loaded plan
     setAiPlanCache({});
     setAiOverrideUsed(false);
     setFreshAiSuggestions([]);
+    // Restore saved grocery cache if available, otherwise regenerate
+    setGroceryCache(weekData.groceryCache || null);
     setEditingHistoryWeek(true);
     setResumePrompt(null);
     setFinalized(false);
@@ -511,7 +536,9 @@ function App() {
       plan,
       quantities,
       baseOverrides,
+      sideOverrides,
       groceryList: [],
+      groceryCache: groceryCache || null,
       finalized: false,
     };
 
@@ -543,9 +570,11 @@ function App() {
           });
           setQuantities({});
           setBaseOverrides({});
+          setSideOverrides({});
           setAiPlanCache(null);
           setAiOverrideUsed(false);
           setFreshAiSuggestions([]);
+          setGroceryCache(null);
           setFinalized(false);
           setEditingHistoryWeek(false);
           setStep(0);
@@ -663,6 +692,8 @@ function App() {
                   setQuantities={setQuantities}
                   baseOverrides={baseOverrides}
                   setBaseOverrides={setBaseOverrides}
+                  sideOverrides={sideOverrides}
+                  setSideOverrides={setSideOverrides}
                   aiPlanCache={aiPlanCache}
                   setAiPlanCache={setAiPlanCache}
                   aiOverrideUsed={aiOverrideUsed}
@@ -720,9 +751,17 @@ function App() {
                   preferences={preferences}
                   baseOverrides={baseOverrides}
                   quantities={quantities}
+                  sideOverrides={sideOverrides}
                 />
 
-                <GroceryList plan={plan} leftovers={leftovers} baseOverrides={baseOverrides} />
+                <GroceryList
+                  plan={plan}
+                  leftovers={leftovers}
+                  baseOverrides={baseOverrides}
+                  sideOverrides={sideOverrides}
+                  groceryCache={groceryCache}
+                  setGroceryCache={setGroceryCache}
+                />
 
                 <div className="flex justify-center pt-2 pb-8">
                   {finalized ? (

@@ -37,23 +37,33 @@ function findMealById(masterMeals, mealId) {
   );
 }
 
-function aggregateIngredients(plan, masterMeals) {
+function aggregateIngredients(plan, masterMeals, sideOverrides = {}) {
   const totals = {}; // ingredientId -> { qty, unit }
 
-  for (const day of Object.values(plan)) {
+  for (const [dayName, day] of Object.entries(plan)) {
     // Breakfast can be array or string
     const breakfastIds = Array.isArray(day.breakfast) ? day.breakfast : [day.breakfast];
     const drinkIds = Array.isArray(day.drinks) ? day.drinks : (day.drinks ? [day.drinks] : []);
-    const mealIds = [...breakfastIds, ...drinkIds, day.lunch, day.dinner].filter(Boolean);
+    // Track which slot each mealId came from for side override lookup
+    const slotMeals = [
+      ...breakfastIds.map((id) => ({ id, slot: 'breakfast' })),
+      ...drinkIds.map((id) => ({ id, slot: 'drinks' })),
+      { id: day.lunch, slot: 'lunch' },
+      { id: day.dinner, slot: 'dinner' },
+    ].filter((s) => s.id);
 
-    for (const mealId of mealIds) {
+    for (const { id: mealId, slot } of slotMeals) {
       const meal = findMealById(masterMeals, mealId);
       if (!meal || !meal.ingredients) continue;
 
-      // Also include side dish ingredients if meal has suggestedSide
+      // Determine effective side: check override first, then fall back to suggestedSide
+      const slotKey = `${dayName}-${slot}`;
+      const overriddenSide = sideOverrides[slotKey];
+      const effectiveSideId = overriddenSide !== undefined ? overriddenSide : meal.suggestedSide;
+
       const sideIngs = [];
-      if (meal.suggestedSide && masterMeals.sides) {
-        const side = masterMeals.sides.find((s) => s.id === meal.suggestedSide);
+      if (effectiveSideId && masterMeals.sides) {
+        const side = masterMeals.sides.find((s) => s.id === effectiveSideId);
         if (side?.ingredients) sideIngs.push(...side.ingredients);
       }
 
@@ -123,7 +133,7 @@ function roundUpToPurchaseUnit(needed, purchaseQty) {
   return Math.ceil(needed / purchaseQty) * purchaseQty;
 }
 
-export async function buildGroceryList(plan, leftovers = []) {
+export async function buildGroceryList(plan, leftovers = [], sideOverrides = {}) {
   const masterMeals = await readJSON('master-meals.json');
   const ingredientsData = await readJSON('ingredients.json');
   const config = await readJSON('config.json');
@@ -148,7 +158,7 @@ export async function buildGroceryList(plan, leftovers = []) {
   }
 
   // Aggregate all ingredients from planned meals
-  const totals = aggregateIngredients(plan, masterMeals);
+  const totals = aggregateIngredients(plan, masterMeals, sideOverrides);
 
   // Always include defaults from config
   const alwaysInclude = config.groceryDefaults.alwaysInclude || [];

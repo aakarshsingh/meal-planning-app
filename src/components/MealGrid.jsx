@@ -22,7 +22,7 @@ const DRINK_ICONS = {
   'Nimbu Pani': '\u{1F34B}',
 };
 
-function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, aiPlanCache, setAiPlanCache, aiOverrideUsed, setAiOverrideUsed, freshAiSuggestions, setFreshAiSuggestions, masterMealsVersion, onBack, toastRef }) {
+function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quantities, setQuantities, baseOverrides, setBaseOverrides, sideOverrides, setSideOverrides, aiPlanCache, setAiPlanCache, aiOverrideUsed, setAiOverrideUsed, freshAiSuggestions, setFreshAiSuggestions, masterMealsVersion, onBack, toastRef }) {
   const [masterMeals, setMasterMeals] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
@@ -479,6 +479,10 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
     setBaseOverrides((prev) => ({ ...prev, [`${day}-${mealType}`]: newBase }));
   }
 
+  function handleSideChange(day, mealType, sideId) {
+    setSideOverrides((prev) => ({ ...prev, [`${day}-${mealType}`]: sideId }));
+  }
+
   function handleMasterMealAdd(newMeal) {
     setMasterMeals((prev) => ({
       ...prev,
@@ -672,16 +676,26 @@ function MealGrid({ leftovers, preferences, setPreferences, plan, setPlan, quant
               AI pick
             </div>
           )}
-          {mealWithOverrides ? (
-            <MealCard
-              meal={mealWithOverrides}
-              onRemove={() => handleRemove(day, mealType)}
-              onSwap={() => setSwapTarget({ day, mealType })}
-              onQtyChange={(delta) => handleQtyChange(mealId, delta)}
-              onBaseChange={(newBase) => handleBaseChange(day, mealType, mealId, newBase)}
-              sideName={meal?.suggestedSide ? (masterMeals?.sides || []).find((s) => s.id === meal.suggestedSide)?.name : undefined}
-            />
-          ) : (
+          {mealWithOverrides ? (() => {
+            const slotKey = `${day}-${mealType}`;
+            const effectiveSideId = sideOverrides[slotKey] !== undefined ? sideOverrides[slotKey] : meal?.suggestedSide;
+            const sideName = effectiveSideId ? (masterMeals?.sides || []).find((s) => s.id === effectiveSideId)?.name : undefined;
+            const allSides = masterMeals?.sides || [];
+            const showSideSelector = (mealType === 'lunch' || mealType === 'dinner') && meal;
+            return (
+              <MealCard
+                meal={mealWithOverrides}
+                onRemove={() => handleRemove(day, mealType)}
+                onSwap={() => setSwapTarget({ day, mealType })}
+                onQtyChange={(delta) => handleQtyChange(mealId, delta)}
+                onBaseChange={(newBase) => handleBaseChange(day, mealType, mealId, newBase)}
+                sideName={sideName}
+                sides={showSideSelector ? allSides : undefined}
+                activeSideId={effectiveSideId || ''}
+                onSideChange={showSideSelector ? (sideId) => handleSideChange(day, mealType, sideId) : undefined}
+              />
+            );
+          })() : (
             <button
               onClick={() => setSwapTarget({ day, mealType })}
               className="w-full h-full flex items-center justify-center text-xs text-ink/30 border border-dashed border-ink/10 rounded-md hover:bg-primary-light hover:text-primary cursor-pointer min-h-[60px]"

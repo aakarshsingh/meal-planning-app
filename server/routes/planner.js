@@ -69,6 +69,8 @@ router.post('/finalize', async (req, res) => {
       days: current.plan,
       quantities: current.quantities || {},
       baseOverrides: current.baseOverrides || {},
+      sideOverrides: current.sideOverrides || {},
+      groceryCache: current.groceryCache || null,
     };
     await appendToHistory(weekData);
 
