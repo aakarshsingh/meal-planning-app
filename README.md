@@ -64,7 +64,7 @@ Autocomplete from ingredient master + fruits. Enter quantities of ingredients yo
 ### Screen 2 — Week Preferences
 - Day rows with inline breakfast/lunch/dinner skip checkboxes
 - Clickable quick prompt chips: "No rice this week", "Light meals on weekdays", etc.
-- Chicken count stepper (default 2)
+- Meat count stepper (default 2) — covers chicken, mutton, etc.
 - Summary card with active days/meals/chicken/pantry item counts
 
 ### Screen 3 — Meal Planner Grid

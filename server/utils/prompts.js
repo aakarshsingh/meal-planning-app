@@ -51,7 +51,7 @@ function formatHistory(history) {
 }
 
 export function buildPlanPrompt(masterMeals, leftovers, preferences, history) {
-  const chickenCount = preferences.chickenCount || 2;
+  const meatCount = preferences.chickenCount || 2;
 
   return `You are an expert meal planner for a 2-person North Indian household. Generate a thoughtful weekly meal plan (Monday–Saturday) that feels curated, not random.
 
@@ -68,7 +68,7 @@ ${formatHistory(history)}
 
 Planning rules:
 1. Use ONLY meal IDs from the list above — do not invent IDs
-2. Exactly ${chickenCount} chicken dishes total across the week
+2. Exactly ${meatCount} meat dishes (chicken/mutton) total across the week
 3. NEVER repeat the same meal ID twice in the same week
 4. AVOID meals used in the last 2 weeks history above
 5. If leftovers are available, choose meals that use those ingredients first

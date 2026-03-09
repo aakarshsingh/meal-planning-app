@@ -1,4 +1,4 @@
-const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
+const TYPE_ICONS = { veg: '\u{1F331}', egg: '\u{1F95A}', meat: '\u{1F356}' };
 
 const FRUIT_ICONS = {
   'Guava': '\u{1F34F}',
@@ -46,7 +46,7 @@ function formatTitle(meal) {
 function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName }) {
   if (!meal) return null;
 
-  const isChicken = meal.type === 'chicken';
+  const isMeat = meal.type === 'meat';
   const isFruit = meal.type === 'fruit';
   const icon = isFruit
     ? (FRUIT_ICONS[meal.name] || '\u{1F34E}')
@@ -57,7 +57,7 @@ function MealCard({ meal, onRemove, onSwap, onQtyChange, onBaseChange, sideName 
   return (
     <div
       className={`rounded-lg border p-2 text-sm transition-shadow ${
-        isChicken
+        isMeat
           ? 'bg-gold-light border-gold/30 shadow-sm'
           : 'bg-white border-ink/10 shadow-sm'
       }`}

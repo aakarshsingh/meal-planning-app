@@ -143,7 +143,7 @@ function parseSpecialRequests(specialRequests, masterMeals) {
     const wantsDifferent = /\bdifferent\b/i.test(req) || /\btwo\s+different\b/i.test(req);
 
     if (wantsDifferent && mentionedDays.length > 1 && bestMatch._cat === 'meal') {
-      // Find all meals of the same type (e.g., all chicken meals)
+      // Find all meals of the same type (e.g., all meat meals)
       const sameType = allItems.filter((item) => item._cat === 'meal' && item.type === bestMatch.type);
       const usedIds = new Set();
       for (const day of mentionedDays) {
@@ -226,21 +226,21 @@ function pickBreakfasts(breakfasts, activeDays, leftovers, preferences, constrai
 function pickMeals(allMeals, activeDays, leftovers, preferences, history, config, constraints = {}) {
   const leftoverIds = getLeftoverIngredientIds(leftovers);
   const noRepeatWeeks = config.rules.noRepeatWithinWeeks || 3;
-  const chickenTarget = config.rules.chickenPerWeek || 2;
+  const meatTarget = config.rules.meatPerWeek || 2;
   const recentIds = getRecentMealIds(history, noRepeatWeeks);
 
   // Prefer non-recent meals, but fall back to all if not enough
   const fresh = allMeals.filter((m) => !recentIds.has(m.id));
   const stale = allMeals.filter((m) => recentIds.has(m.id));
 
-  // Chicken: prefer fresh, fall back to stale
-  const freshChicken = shuffle(fresh.filter((m) => m.type === 'chicken'));
-  const staleChicken = shuffle(stale.filter((m) => m.type === 'chicken'));
-  const chickenMeals = [...freshChicken, ...staleChicken];
+  // Meat: prefer fresh, fall back to stale
+  const freshMeat = shuffle(fresh.filter((m) => m.type === 'meat'));
+  const staleMeat = shuffle(stale.filter((m) => m.type === 'meat'));
+  const meatMeals = [...freshMeat, ...staleMeat];
 
   // Veg/Egg: prefer fresh, fall back to stale
-  const freshVegEgg = shuffle(fresh.filter((m) => m.type !== 'chicken'));
-  const staleVegEgg = shuffle(stale.filter((m) => m.type !== 'chicken'));
+  const freshVegEgg = shuffle(fresh.filter((m) => m.type !== 'meat'));
+  const staleVegEgg = shuffle(stale.filter((m) => m.type !== 'meat'));
   const vegEggMeals = [...freshVegEgg, ...staleVegEgg];
 
   // Build slots to fill: each active day needs lunch + dinner (minus skipped)
@@ -260,7 +260,7 @@ function pickMeals(allMeals, activeDays, leftovers, preferences, history, config
   }
 
   const usedThisWeek = new Set();
-  let chickenCount = 0;
+  let meatCount = 0;
   let lastBase = null;
 
   // Pass 0: Pre-place hard constraints from special requests
@@ -274,38 +274,38 @@ function pickMeals(allMeals, activeDays, leftovers, preferences, history, config
         if (meal.slot === 'dinner' && mealType !== 'dinner') continue;
         plan[day][mealType] = mealId;
         usedThisWeek.add(mealId);
-        if (meal.type === 'chicken') chickenCount++;
+        if (meal.type === 'meat') meatCount++;
         lastBase = meal.base;
         break;
       }
     }
   }
 
-  // Adjust chicken target: don't over-place chicken beyond what constraints already set
-  const remainingChicken = Math.max(0, chickenTarget - chickenCount);
+  // Adjust meat target: don't over-place beyond what constraints already set
+  const remainingMeat = Math.max(0, meatTarget - meatCount);
 
-  // First pass: place chicken meals (only in non-constrained slots)
-  let chickenPlaced = 0;
-  const chickenSlots = shuffle([...slots]);
-  for (const slot of chickenSlots) {
-    if (chickenPlaced >= remainingChicken) break;
+  // First pass: place meat meals (only in non-constrained slots)
+  let meatPlaced = 0;
+  const meatSlots = shuffle([...slots]);
+  for (const slot of meatSlots) {
+    if (meatPlaced >= remainingMeat) break;
     if (plan[slot.day][slot.mealType]) continue; // already filled by constraint
     if (plan[slot.day].lunch || plan[slot.day].dinner) {
-      // Don't put two chicken in same day if possible
+      // Don't put two meat in same day if possible
       const otherSlot = slot.mealType === 'lunch' ? 'dinner' : 'lunch';
       const otherId = plan[slot.day][otherSlot];
       if (otherId) {
         const otherMeal = allMeals.find((m) => m.id === otherId);
-        if (otherMeal && otherMeal.type === 'chicken') continue;
+        if (otherMeal && otherMeal.type === 'meat') continue;
       }
     }
 
-    for (const cm of chickenMeals) {
+    for (const cm of meatMeals) {
       if (usedThisWeek.has(cm.id)) continue;
       if (cm.slot === 'dinner' && slot.mealType !== 'dinner') continue;
       plan[slot.day][slot.mealType] = cm.id;
       usedThisWeek.add(cm.id);
-      chickenPlaced++;
+      meatPlaced++;
       lastBase = cm.base;
       break;
     }

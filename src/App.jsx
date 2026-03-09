@@ -336,18 +336,18 @@ function App() {
     }
 
     if (masterMeals) {
-      let chickenCount = 0;
+      let meatCount = 0;
       for (const day of DAYS) {
         if (!plan[day]) continue;
         const allIds = [plan[day].lunch, plan[day].dinner].filter(Boolean);
         for (const mealId of allIds) {
           const meal = masterMeals.meals?.find((m) => m.id === mealId);
-          if (meal?.type === 'chicken') chickenCount++;
+          if (meal?.type === 'meat') meatCount++;
         }
       }
       const target = preferences.chickenCount || 2;
-      if (chickenCount !== target) {
-        warnings.push(`Chicken dishes: ${chickenCount} (target: ${target})`);
+      if (meatCount !== target) {
+        warnings.push(`Meat dishes: ${meatCount} (target: ${target})`);
       }
     }
 

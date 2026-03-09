@@ -70,7 +70,7 @@ meal-planner/
 - **Breakfast**: Auto-suggested from a rotation of 11 options, user can swap via modal. No limit on items per day
 - **Dual-category items**: Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha usable in lunch/dinner)
 - **Lunch/Dinner**: Flexible — same meal can go in either slot. 22+ meals in master list
-- **Chicken**: Target 2 dishes per week (configurable in config.json)
+- **Meat**: Target 2 meat dishes per week — chicken, mutton, etc. (configurable in config.json as `meatPerWeek`)
 - **No-repeat rule**: Don't repeat meals from the last 2 weeks (reads history.json)
 - **Within-week uniqueness**: No same meal twice in a single week
 - **Fruits**: Shown as a separate row in the meal grid, editable in pantry stock screen, 6 fruits available
@@ -88,9 +88,9 @@ meal-planner/
 ## Data File Formats
 
 ### master-meals.json
-- `meta`: servings, cuisine, chickenPerWeek
+- `meta`: servings, cuisine, meatPerWeek
 - `breakfasts[]`: id (bf-XX), name, defaultQty, unit, accompaniment, ingredients[]
-- `meals[]`: id (meal-XX), name, type (veg/egg/chicken), slot (flexible/dinner), base (rice/paratha/roti/pav/none), suggestedSide (optional side-XX ref), ingredients[]
+- `meals[]`: id (meal-XX), name, type (veg/egg/meat), slot (flexible/dinner), base (rice/paratha/roti/pav/none), suggestedSide (optional side-XX ref), ingredients[]
 - `sides[]`: id (side-XX), name, ingredients[]
 - `drinks[]`: id (drink-XX), name, ingredients[]
 - `fruits[]`: id (fruit-XX), name, defaultQty, unit, season
@@ -107,7 +107,7 @@ meal-planner/
 
 ### config.json
 - household: servings, cuisine, planDays, mealSlots
-- rules: chickenPerWeek, noRepeatWithinWeeks, breakfastAutoSuggest, etc.
+- rules: meatPerWeek, noRepeatWithinWeeks, breakfastAutoSuggest, etc.
 - groceryDefaults: alwaysInclude ingredient IDs, calculateFromMeals flag
 - ai: provider, model, usagePoints
 
@@ -118,7 +118,7 @@ meal-planner/
 3. Filter master meals: exclude recently used, exclude already-in-current-week
 4. Score candidates: +3 uses leftover ingredient, +1 alternates rice/paratha base, -10 already this week
 5. Pre-place constrained meals (from special requests) before any random fill
-6. Enforce: exactly N chicken meals (from config, adjusted for constrained chicken), rest veg/egg
+6. Enforce: exactly N meat meals (from config, adjusted for constrained meat), rest veg/egg
 7. Breakfast: rotate through 11 options, prefer ones using leftovers. Honor breakfast constraints first
 8. Fruit: rotate, no same fruit on consecutive days
 9. Fallback to Claude API if rule-based engine can't fill all slots
@@ -153,9 +153,9 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 
 - Tailwind CSS with Helvetica font
 - Color palette: #EBEBD3 (cream/base), #00635D (teal/primary), #0C1B33 (navy/text), #F4D35E (gold/highlights), #DA4167 (red/accent)
-- Meal type indicators: egg, chicken (no icon for veg)
+- Meal type indicators: veg (seedling), egg, meat (drumstick) — all types have icons
 - Per-fruit emoji icons, per-drink emoji icons
-- Chicken meals get gold accent highlight
+- Meat meals get gold accent highlight
 - AI-placed cells: purple border + "AI pick" label
 - Drag-and-drop: highlight target cell on drag-over
 - Skipped days greyed out

@@ -218,13 +218,13 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
         )}
       </div>
 
-      {/* Chicken count */}
+      {/* Meat count */}
       <div className="bg-white rounded-xl shadow-sm border border-ink/10 p-6">
         <h2 className="text-lg font-semibold text-ink mb-1">
-          Chicken dishes this week
+          Meat dishes this week
         </h2>
         <p className="text-sm text-ink/50 mb-4">
-          How many chicken meals do you want?
+          How many meat meals do you want? (chicken, mutton, etc.)
         </p>
 
         <div className="flex items-center gap-3">
@@ -262,7 +262,7 @@ function WeekPreferences({ preferences, setPreferences, leftoversCount, onBack, 
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-ink">{chickenCount}</p>
-            <p className="text-xs text-ink/60">chicken</p>
+            <p className="text-xs text-ink/60">meat</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-ink">{leftoversCount}</p>

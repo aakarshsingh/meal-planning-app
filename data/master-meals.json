@@ -432,7 +432,7 @@
     {
       "id": "meal-06",
       "name": "Chicken Biryani",
-      "type": "chicken",
+      "type": "meat",
       "slot": "flexible",
       "base": "none",
       "ingredients": [
@@ -476,7 +476,7 @@
     {
       "id": "meal-07",
       "name": "Chicken Brown Gravy",
-      "type": "chicken",
+      "type": "meat",
       "slot": "flexible",
       "base": "paratha",
       "defaultQty": 4,
@@ -1025,7 +1025,7 @@
     {
       "id": "meal-23",
       "name": "Chicken Gravy with Cream",
-      "type": "chicken",
+      "type": "meat",
       "slot": "flexible",
       "base": "paratha",
       "ingredients": []
@@ -1033,7 +1033,7 @@
     {
       "id": "meal-24",
       "name": "Mutton Gravy",
-      "type": "chicken",
+      "type": "meat",
       "slot": "flexible",
       "base": "paratha",
       "ingredients": []

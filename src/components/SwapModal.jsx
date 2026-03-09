@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
+const TYPE_ICONS = { veg: '\u{1F331}', egg: '\u{1F95A}', meat: '\u{1F356}' };
 const FRUIT_ICONS = {
   'Guava': '\u{1F34F}', 'Pomegranate': '\u{1F9C3}', 'Apple': '\u{1F34E}',
   'Kiwi': '\u{1F95D}', 'Grapes': '\u{1F347}', 'Strawberry': '\u{1F353}',
@@ -339,7 +339,7 @@ function SwapModal({
                         {icon && <span className="text-base">{icon}</span>}
                         <span className="font-medium text-sm text-ink flex-1">{item.name}</span>
                         {item.base && <span className="text-[10px] text-ink/40 capitalize">{item.base}</span>}
-                        {item.type && item.type !== 'veg' && (
+                        {item.type && (
                           <span className="text-[10px] text-ink/40 capitalize">{item.type}</span>
                         )}
                       </div>

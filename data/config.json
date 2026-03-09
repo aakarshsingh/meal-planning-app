@@ -1,0 +1,30 @@
+{
+  "household": {
+    "servings": 2,
+    "cuisine": "North Indian",
+    "planDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "mealSlots": ["breakfast", "lunch", "dinner", "fruit"]
+  },
+  "rules": {
+    "meatPerWeek": 2,
+    "noRepeatWithinWeeks": 3,
+    "breakfastAutoSuggest": true,
+    "breakfastAllowOverride": true,
+    "fruitShowInGrid": true,
+    "mealSlotFlexible": true,
+    "uniqueMealsWithinWeek": true
+  },
+  "groceryDefaults": {
+    "alwaysInclude": ["ing-milk", "ing-atta", "ing-oil", "ing-rice"],
+    "calculateFromMeals": true
+  },
+  "ai": {
+    "provider": "claude",
+    "model": "claude-sonnet-4-20250514",
+    "usagePoints": [
+      "initial-plan-generation",
+      "swap-suggestions",
+      "grocery-optimization"
+    ]
+  }
+}

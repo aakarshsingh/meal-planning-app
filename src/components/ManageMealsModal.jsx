@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 
-const TYPE_ICONS = { egg: '\u{1F95A}', chicken: '\u{1F357}' };
+const TYPE_ICONS = { veg: '\u{1F331}', egg: '\u{1F95A}', meat: '\u{1F356}' };
 const TYPE_OPTIONS = [
   { value: 'veg', label: 'Veg' },
   { value: 'egg', label: 'Egg' },
-  { value: 'chicken', label: 'Chicken' },
+  { value: 'meat', label: 'Meat' },
 ];
 const BASE_OPTIONS = ['rice', 'roti', 'paratha', 'pav', 'none'];
 const SLOT_OPTIONS = [
