@@ -67,10 +67,14 @@ router.post('/finalize', async (req, res) => {
       weekStart: current.weekStart,
       weekEnd: current.weekEnd,
       days: current.plan,
+      leftovers: current.leftovers || [],
+      preferences: current.preferences || {},
       quantities: current.quantities || {},
       baseOverrides: current.baseOverrides || {},
       sideOverrides: current.sideOverrides || {},
       groceryCache: current.groceryCache || null,
+      aiPlanCache: current.aiPlanCache || null,
+      freshAiSuggestions: current.freshAiSuggestions || [],
     };
     await appendToHistory(weekData);
 

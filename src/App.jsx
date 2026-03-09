@@ -410,18 +410,19 @@ function App() {
     setWeekMonday(weekData.weekStart);
     setQuantities(weekData.quantities || {});
     setBaseOverrides(weekData.baseOverrides || {});
-    setLeftovers([]);
-    setPreferences({
+    // Restore pantry stock and preferences from history
+    setLeftovers(weekData.leftovers || []);
+    setPreferences(weekData.preferences || {
       skipDays: [],
       skipMeals: [],
       specialRequests: [],
       chickenCount: 2,
     });
     setSideOverrides(weekData.sideOverrides || {});
-    // Set aiPlanCache to empty object to prevent AI from overwriting the loaded plan
-    setAiPlanCache({});
+    // Restore AI suggestions if saved, otherwise use empty object to skip AI generation
+    setAiPlanCache(weekData.aiPlanCache || {});
     setAiOverrideUsed(false);
-    setFreshAiSuggestions([]);
+    setFreshAiSuggestions(weekData.freshAiSuggestions || []);
     // Restore saved grocery cache if available, otherwise regenerate
     setGroceryCache(weekData.groceryCache || null);
     setEditingHistoryWeek(true);
@@ -539,6 +540,8 @@ function App() {
       sideOverrides,
       groceryList: [],
       groceryCache: groceryCache || null,
+      aiPlanCache: aiPlanCache || null,
+      freshAiSuggestions: freshAiSuggestions || [],
       finalized: false,
     };
 

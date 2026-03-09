@@ -100,7 +100,7 @@ meal-planner/
 - `ingredients[]`: id (ing-XXX), name, category (staple/vegetable/dairy/protein/bakery/ready-mix/spice), purchaseUnit, purchaseQty, shelfLifeDays, alwaysInStock (optional)
 
 ### history.json
-- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs], quantities{}, baseOverrides{}, groceryCache{}
+- `weeks[]`: weekStart, weekEnd, days.{DayName}.{breakfast/lunch/dinner} = meal ID or null, days.{DayName}.fruit = [fruit IDs], leftovers[], preferences{}, quantities{}, baseOverrides{}, sideOverrides{}, groceryCache{}, aiPlanCache{}, freshAiSuggestions[]
 
 ### current-week.json
 - weekStart, weekEnd, leftovers[], preferences{}, plan{}, quantities{}, baseOverrides{}, groceryList[], groceryCache{}, finalized
@@ -178,8 +178,8 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - No limit on breakfast/drink items per day — user can add as many as desired
 - Special requests in preferences are hard constraints — both rule-based engine and AI prompt enforce them
 - Skipped slots on Screen 3 can be unskipped via hover X button — revives the slot for planning
-- History edit: loading a past week sets `aiPlanCache` to `{}` (truthy) to skip AI generation — preserves user's original meal choices
-- History edit: loading restores saved `groceryCache` so grocery edits (qty changes, removals, custom items) are preserved — no regeneration
+- History edit: loading a past week restores all state — leftovers, preferences (skip days, special requests, chicken count), quantities, base/side overrides, AI suggestions, and grocery cache
+- History edit: `aiPlanCache` restored from history (if saved) to preserve AI suggestions in SwapModal; falls back to `{}` to skip AI generation
 - History upsert: `appendToHistory` uses weekStart as key — re-finalizing updates the existing entry, not a duplicate
-- Finalize saves `quantities`, `baseOverrides`, and `groceryCache` to history.json alongside meal data
+- Finalize saves full state to history: leftovers, preferences, quantities, baseOverrides, sideOverrides, groceryCache, aiPlanCache, freshAiSuggestions
 - Grocery cache invalidation skipped during history load via `skipGroceryInvalidation` ref — prevents the plan/override state changes from wiping the restored cache
