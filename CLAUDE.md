@@ -68,7 +68,7 @@ meal-planner/
 - **Side dishes**: Optional sides (Yellow Dal, Raita, etc.) linked to meals via `suggestedSide` field. Sides section in master-meals.json. Side ingredients auto-included in grocery calculation
 - **Countable qty**: Only roti/paratha/pav bases show qty +/- buttons. Also countable breakfasts: Bread, Aloo Paratha, Chilla, French Toast, Poori. Rice/none are non-countable
 - **Breakfast**: Auto-suggested from a rotation of 11 options, user can swap via modal. No limit on items per day
-- **Dual-category items**: Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha usable in lunch/dinner)
+- **Dual-category items**: Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha usable in lunch/dinner). Duplicate name check is per-category, not global — same name allowed across breakfast + mains
 - **Lunch/Dinner**: Flexible — same meal can go in either slot. 22+ meals in master list
 - **Meat**: Target 2 meat dishes per week — chicken, mutton, etc. (configurable in config.json as `meatPerWeek`)
 - **No-repeat rule**: Don't repeat meals from the last 2 weeks (reads history.json)

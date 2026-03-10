@@ -62,16 +62,14 @@ function ManageMealsModal({ onClose, toastRef }) {
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose, editingId, deleteConfirm, showAdd]);
 
-  function getAllNames(excludeId) {
-    return [
-      ...(masterMeals?.breakfasts || []),
-      ...(masterMeals?.meals || []),
-      ...(masterMeals?.drinks || []),
-      ...(masterMeals?.fruits || []),
-      ...(masterMeals?.sides || []),
-    ]
-      .filter((m) => m.id !== excludeId)
-      .map((m) => m.name.toLowerCase().trim());
+  function getCategoryNames(category, excludeId) {
+    let arr;
+    if (category === 'breakfast') arr = masterMeals?.breakfasts || [];
+    else if (category === 'fruit') arr = masterMeals?.fruits || [];
+    else if (category === 'drink') arr = masterMeals?.drinks || [];
+    else if (category === 'side') arr = masterMeals?.sides || [];
+    else arr = masterMeals?.meals || [];
+    return arr.filter((m) => m.id !== excludeId).map((m) => m.name.toLowerCase().trim());
   }
 
   function startEdit(item, category) {
@@ -89,7 +87,7 @@ function ManageMealsModal({ onClose, toastRef }) {
   function saveEdit() {
     if (!editingId || !editData.name?.trim()) return;
 
-    if (getAllNames(editingId).includes(editData.name.trim().toLowerCase())) {
+    if (getCategoryNames(editData.category, editingId).includes(editData.name.trim().toLowerCase())) {
       toastRef.current?.error('A dish with this name already exists');
       return;
     }
@@ -174,7 +172,7 @@ function ManageMealsModal({ onClose, toastRef }) {
   function handleAdd() {
     if (!newMeal.name.trim()) return;
 
-    if (getAllNames().includes(newMeal.name.trim().toLowerCase())) {
+    if (getCategoryNames(addCategory).includes(newMeal.name.trim().toLowerCase())) {
       toastRef.current?.error(`"${newMeal.name.trim()}" already exists`);
       return;
     }
@@ -227,13 +225,14 @@ function ManageMealsModal({ onClose, toastRef }) {
       .then(async () => {
         // If also adding as main, make a second API call
         if (alsoMainMeal) {
-          try {
-            await fetch('/api/meals', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(alsoMainMeal),
-            });
-          } catch {} // Silently skip if duplicate
+          const mainRes = await fetch('/api/meals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(alsoMainMeal),
+          });
+          if (!mainRes.ok) {
+            toastRef.current?.error('Added breakfast but failed to add as main');
+          }
         }
 
         setMasterMeals((prev) => {

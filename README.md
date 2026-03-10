@@ -29,7 +29,7 @@
 - **Base swap per cell** — Inline rice/roti/paratha/pav/none buttons
 - **Unlimited breakfast items** — Add as many breakfasts, drinks per day as desired
 - **Breakfast auto-rotation** with manual override via modal
-- **Dual-category items** — Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha)
+- **Dual-category items** — Breakfast items can optionally be added to Mains too (e.g., Aloo Paratha). Per-category dedup allows same name across categories
 - **Fruit row** in the grid (separate from meals), fruits searchable in pantry stock
 - **Special requests as hard constraints** — Type "Have Poori on Saturday" or "Chicken Gravy on Wed and Fri, two different kinds" — both rule-based engine and AI enforce them exactly
 - **Smart suggestions** — No repeats within the week, avoids last 2 weeks' history, uses leftovers first

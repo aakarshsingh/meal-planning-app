@@ -41,16 +41,16 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'id and name are required' });
     }
 
-    // Duplicate name check across all categories
-    const allNames = [
-      ...(data.breakfasts || []),
-      ...(data.meals || []),
-      ...(data.drinks || []),
-      ...(data.fruits || []),
-      ...(data.sides || []),
-    ].map((m) => m.name.toLowerCase().trim());
+    // Duplicate name check within the target category
+    let targetArray;
+    if (meal.id.startsWith('bf-')) targetArray = data.breakfasts || [];
+    else if (meal.id.startsWith('fruit-')) targetArray = data.fruits || [];
+    else if (meal.id.startsWith('drink-')) targetArray = data.drinks || [];
+    else if (meal.id.startsWith('side-')) targetArray = data.sides || [];
+    else targetArray = data.meals || [];
 
-    if (allNames.includes(meal.name.toLowerCase().trim())) {
+    const targetNames = targetArray.map((m) => m.name.toLowerCase().trim());
+    if (targetNames.includes(meal.name.toLowerCase().trim())) {
       return res.status(409).json({ error: `"${meal.name}" already exists` });
     }
 
