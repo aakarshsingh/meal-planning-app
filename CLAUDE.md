@@ -80,9 +80,10 @@ meal-planner/
 ## State Management
 
 - **Lifted state**: `quantities`, `baseOverrides`, `aiPlanCache`, `aiOverrideUsed`, `freshAiSuggestions`, `masterMealsVersion`, `editingHistoryWeek`, `groceryCache` are owned by App.jsx, not MealGrid
-- **Persistence**: qty/base/AI cache persist across Edit ↔ Review transitions — no extra API calls on "Back to Edit"
-- **Auto-save**: current-week.json saves quantities and baseOverrides (debounced 2s)
-- **Resume**: Restores quantities and baseOverrides from saved state
+- **Persistence**: qty/base/AI/grocery cache persist across Edit ↔ Review transitions — no extra API calls on "Back to Edit"
+- **Grocery cache**: Once generated, grocery list persists through plan edits. Only regenerated on a fresh new plan (cache is null). Saved to auto-save, history, and restored on resume/history load
+- **Auto-save**: current-week.json saves quantities, baseOverrides, sideOverrides, and groceryCache (debounced 2s)
+- **Resume**: Restores quantities, baseOverrides, sideOverrides, and groceryCache from saved state
 - **AI tracking**: `aiPlacedSlots` Set in MealGrid tracks which day-slot combos were AI-placed (purple indicator)
 
 ## Data File Formats
@@ -182,4 +183,4 @@ Screen 1 (Pantry Stock) → Screen 2 (Preferences) → Screen 3 Part 1 (Edit Gri
 - History edit: `aiPlanCache` restored from history (if saved) to preserve AI suggestions in SwapModal; falls back to `{}` to skip AI generation
 - History upsert: `appendToHistory` uses weekStart as key — re-finalizing updates the existing entry, not a duplicate
 - Finalize saves full state to history: leftovers, preferences, quantities, baseOverrides, sideOverrides, groceryCache, aiPlanCache, freshAiSuggestions
-- Grocery cache invalidation skipped during history load via `skipGroceryInvalidation` ref — prevents the plan/override state changes from wiping the restored cache
+- Grocery cache is never auto-invalidated — once created it persists through all plan edits. Only null on fresh plan start or after finalize reset

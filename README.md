@@ -33,7 +33,7 @@
 - **Fruit row** in the grid (separate from meals), fruits searchable in pantry stock
 - **Special requests as hard constraints** — Type "Have Poori on Saturday" or "Chicken Gravy on Wed and Fri, two different kinds" — both rule-based engine and AI enforce them exactly
 - **Smart suggestions** — No repeats within the week, avoids last 2 weeks' history, uses leftovers first
-- **Pre-optimized grocery list** — AI fixes quantities before display (Mushroom→200g, Coriander→1 bunch), bulk buy tips
+- **Pre-optimized grocery list** — AI fixes quantities before display (Mushroom→200g, Coriander→1 bunch), bulk buy tips. Generated once per plan, persists through edits
 - **Editable grocery items** — Pencil icon + click to edit qty/unit, remove with x button
 - **Copyable outputs** — Day-wise meal chart + grocery list as WhatsApp-friendly text
 - **History tracking** — Saves finalized weeks with full state: pantry stock, preferences (skip days, special requests), qty/base/side overrides, grocery edits, and AI suggestions

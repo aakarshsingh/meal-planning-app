@@ -350,6 +350,7 @@ function App() {
         quantities,
         baseOverrides,
         sideOverrides,
+        groceryCache: groceryCache || null,
         groceryList: [],
         finalized: false,
       };
@@ -360,7 +361,7 @@ function App() {
         body: JSON.stringify(currentWeek),
       }).catch(() => {});
     }, 2000);
-  }, [plan, leftovers, preferences, weekMonday, weekSaturdayStr, quantities, baseOverrides, sideOverrides]);
+  }, [plan, leftovers, preferences, weekMonday, weekSaturdayStr, quantities, baseOverrides, sideOverrides, groceryCache]);
 
   useEffect(() => {
     autoSave();
@@ -369,20 +370,7 @@ function App() {
     };
   }, [autoSave]);
 
-  // Invalidate grocery cache when plan/overrides change (user edits meals)
-  const groceryCacheInitRef = useRef(true);
-  const skipGroceryInvalidation = useRef(false);
-  useEffect(() => {
-    if (groceryCacheInitRef.current) {
-      groceryCacheInitRef.current = false;
-      return;
-    }
-    if (skipGroceryInvalidation.current) {
-      skipGroceryInvalidation.current = false;
-      return;
-    }
-    setGroceryCache(null);
-  }, [plan, baseOverrides, sideOverrides]);
+  // Grocery cache persists once created — only regenerated on fresh plan start
 
   function handleResume() {
     if (!resumePrompt) return;
@@ -393,6 +381,7 @@ function App() {
     if (resumePrompt.quantities) setQuantities(resumePrompt.quantities);
     if (resumePrompt.baseOverrides) setBaseOverrides(resumePrompt.baseOverrides);
     if (resumePrompt.sideOverrides) setSideOverrides(resumePrompt.sideOverrides);
+    if (resumePrompt.groceryCache) setGroceryCache(resumePrompt.groceryCache);
     setStep(2);
     setResumePrompt(null);
     toastRef.current?.success('Resumed previous plan');
@@ -404,8 +393,6 @@ function App() {
 
   function handleLoadHistoryWeek(weekData) {
     // Load a finalized week back into the editor
-    // Skip grocery cache invalidation for this batch of state changes
-    skipGroceryInvalidation.current = true;
     setPlan(weekData.days || {});
     setWeekMonday(weekData.weekStart);
     setQuantities(weekData.quantities || {});
