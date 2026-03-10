@@ -83,7 +83,7 @@ Weekly HTML table: Mon–Sat x Breakfast, Lunch, Dinner, Fruit.
 - **Review Plan** → Pre-optimized grocery list + weekly chart (with base/qty overrides) + finalize
 
 ### Output 1 — Weekly Meal Chart
-Day-wise formatted text with base and qty overrides. One-click copy per day or full week.
+Day-wise formatted text with base, qty, and side dish overrides. One-click copy per day or full week.
 
 ### Output 2 — Grocery List
 Auto-generated and AI-optimized before display (includes side dish ingredients). Pencil edit icon per item. Per-item edit (qty/unit) and remove. "+ Add Item" for custom entries (with close button). Grouped by category. All edits saved to history and restored on history load.

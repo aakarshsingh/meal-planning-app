@@ -44,7 +44,7 @@ meal-planner/
 │       ├── MealCard.jsx         # Meal tile: "Name + Base" title, base swap, smart qty, side dish label
 │       ├── SwapModal.jsx        # 3-section modal: AI suggestions, rule-based, everything else
 │       ├── GroceryList.jsx      # Pre-optimized grocery with edit icon, per-item edit/remove, add custom items
-│       ├── WeeklyChart.jsx      # Copyable day-wise meal text with base/qty overrides
+│       ├── WeeklyChart.jsx      # Copyable day-wise meal text with base/qty/side overrides
 │       ├── Toast.jsx            # Toast notification system (success/error/warning)
 │       └── ManageMealsModal.jsx # CRUD meals/sides with dedup check, categories, suggestedSide, inline edit/delete
 ├── .env                         # ANTHROPIC_API_KEY=sk-ant-...

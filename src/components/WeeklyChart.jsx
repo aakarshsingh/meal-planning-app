@@ -61,6 +61,13 @@ function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quant
       }
     }
 
+    // Add side dish name if present
+    const effectiveSideId = sideOverrides[slotKey] !== undefined ? sideOverrides[slotKey] : meal.suggestedSide;
+    if (effectiveSideId) {
+      const side = (masterMeals.sides || []).find((s) => s.id === effectiveSideId);
+      if (side) name += ` + ${side.name}`;
+    }
+
     // Use overridden qty for countable items
     const isCountable = COUNTABLE_BASES.includes(base);
     if (isCountable) {
@@ -72,13 +79,6 @@ function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quant
     if (meal.id?.startsWith('bf-') && meal.defaultQty) {
       const qty = quantities[mealId] || meal.defaultQty;
       return `${name} x ${qty}`;
-    }
-
-    // Add side dish name if present
-    const effectiveSideId = sideOverrides[slotKey] !== undefined ? sideOverrides[slotKey] : meal.suggestedSide;
-    if (effectiveSideId) {
-      const side = (masterMeals.sides || []).find((s) => s.id === effectiveSideId);
-      if (side) name += ` + ${side.name}`;
     }
 
     const accompaniment = meal.accompaniment ? `${meal.accompaniment}, ` : '';
