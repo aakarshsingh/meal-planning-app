@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import { isCountable } from './MealCard';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const BASE_LABELS = { rice: 'Rice', roti: 'Roti', paratha: 'Paratha', pav: 'Pav', none: '' };
-const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 
 function CopyButton({ text, label }) {
   const [copied, setCopied] = useState(false);
@@ -68,16 +68,10 @@ function WeeklyChart({ plan, masterMeals, preferences, baseOverrides = {}, quant
       if (side) name += ` + ${side.name}`;
     }
 
-    // Use overridden qty for countable items
-    const isCountable = COUNTABLE_BASES.includes(base);
-    if (isCountable) {
+    // Show qty for countable items (countable bases + countable-by-name like Aloo Paratha)
+    const mealWithBase = { ...meal, base };
+    if (isCountable(mealWithBase)) {
       const qty = quantities[mealId] || meal.defaultQty || 2;
-      return `${name} x ${qty}`;
-    }
-
-    // For breakfasts with qty
-    if (meal.id?.startsWith('bf-') && meal.defaultQty) {
-      const qty = quantities[mealId] || meal.defaultQty;
       return `${name} x ${qty}`;
     }
 

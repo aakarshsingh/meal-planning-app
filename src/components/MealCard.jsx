@@ -26,13 +26,11 @@ const COUNTABLE_BASES = ['roti', 'paratha', 'pav'];
 const COUNTABLE_BREAKFASTS = ['bread', 'aloo paratha', 'chilla', 'french toast', 'toast', 'poori'];
 
 export function isCountable(meal) {
-  // Lunch/dinner: countable only if base is roti/paratha/pav
+  // Countable if base is roti/paratha/pav
   if (meal.base && COUNTABLE_BASES.includes(meal.base)) return true;
-  // Breakfasts: specific items are countable
-  if (meal.id?.startsWith('bf-')) {
-    const nameLower = meal.name?.toLowerCase() || '';
-    return COUNTABLE_BREAKFASTS.some((cb) => nameLower.includes(cb));
-  }
+  // Specific items are countable by name (breakfasts and their dual-category mains)
+  const nameLower = meal.name?.toLowerCase() || '';
+  if (COUNTABLE_BREAKFASTS.some((cb) => nameLower.includes(cb))) return true;
   return false;
 }
 

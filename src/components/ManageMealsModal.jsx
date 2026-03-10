@@ -208,6 +208,8 @@ function ManageMealsModal({ onClose, toastRef }) {
           type: 'veg',
           slot: 'flexible',
           base: 'none',
+          defaultQty: 2,
+          unit: 'nos',
           ingredients: [],
         }
       : null;
