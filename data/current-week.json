@@ -1,0 +1,57 @@
+{
+  "weekStart": null,
+  "weekEnd": null,
+  "leftovers": [],
+  "preferences": {
+    "skipDays": [],
+    "skipMeals": [],
+    "specialRequests": [],
+    "chickenDays": []
+  },
+  "plan": {
+    "Monday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    },
+    "Tuesday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    },
+    "Wednesday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    },
+    "Thursday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    },
+    "Friday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    },
+    "Saturday": {
+      "breakfast": [],
+      "drinks": [],
+      "lunch": null,
+      "dinner": null,
+      "fruit": []
+    }
+  },
+  "groceryList": [],
+  "finalized": false
+}

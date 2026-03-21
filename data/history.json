@@ -1,0 +1,957 @@
+{
+  "weeks": [
+    {
+      "weekStart": "2025-10-07",
+      "weekEnd": "2025-10-12",
+      "days": {
+        "Tuesday": {
+          "breakfast": "bf-06",
+          "lunch": "meal-04",
+          "dinner": "meal-08",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-16",
+          "dinner": "meal-07",
+          "fruit": []
+        },
+        "Thursday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-15",
+          "dinner": "meal-16",
+          "fruit": []
+        },
+        "Friday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-14",
+          "dinner": "meal-12",
+          "fruit": []
+        },
+        "Saturday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-03",
+          "dinner": "meal-06",
+          "fruit": []
+        },
+        "Sunday": {
+          "breakfast": "bf-08",
+          "lunch": "meal-06",
+          "dinner": "meal-06",
+          "fruit": []
+        }
+      }
+    },
+    {
+      "weekStart": "2025-10-13",
+      "weekEnd": "2025-10-19",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-01",
+          "dinner": "meal-22",
+          "fruit": [
+            "fruit-01",
+            "fruit-04"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-02",
+          "dinner": "meal-11",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-09",
+          "dinner": "meal-20",
+          "fruit": [
+            "fruit-03",
+            "fruit-04"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-05",
+          "dinner": "meal-19",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-10",
+          "dinner": "meal-11",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-08",
+          "lunch": "meal-07",
+          "dinner": null,
+          "fruit": [
+            "fruit-03",
+            "fruit-04"
+          ]
+        }
+      }
+    },
+    {
+      "weekStart": "2025-10-22",
+      "weekEnd": "2025-10-25",
+      "days": {
+        "Wednesday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-13",
+          "dinner": "meal-16",
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-10",
+          "dinner": "meal-17",
+          "fruit": [
+            "fruit-04",
+            "fruit-01"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-02",
+          "dinner": "meal-05",
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-06",
+          "dinner": null,
+          "fruit": [
+            "fruit-04",
+            "fruit-01"
+          ]
+        }
+      }
+    },
+    {
+      "weekStart": "2025-10-27",
+      "weekEnd": "2025-10-31",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-04",
+          "lunch": null,
+          "dinner": "meal-12",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-09",
+          "dinner": "meal-03",
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-06",
+          "lunch": "meal-11",
+          "dinner": "meal-07",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-08",
+          "dinner": "meal-19",
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-07",
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        }
+      }
+    },
+    {
+      "weekStart": "2025-11-03",
+      "weekEnd": "2025-11-07",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-01",
+          "dinner": "meal-04",
+          "fruit": []
+        },
+        "Tuesday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-21",
+          "dinner": "meal-13",
+          "fruit": []
+        },
+        "Wednesday": {
+          "breakfast": null,
+          "lunch": "meal-15",
+          "dinner": null,
+          "fruit": []
+        },
+        "Thursday": {
+          "breakfast": null,
+          "lunch": "meal-14",
+          "dinner": null,
+          "fruit": []
+        }
+      }
+    },
+    {
+      "weekStart": "2025-11-10",
+      "weekEnd": "2025-11-15",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-02",
+          "dinner": "meal-10",
+          "fruit": [
+            "fruit-01",
+            "fruit-04"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-08",
+          "dinner": "meal-12",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-03",
+          "dinner": "meal-05",
+          "fruit": [
+            "fruit-01",
+            "fruit-04"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-04",
+          "dinner": "meal-09",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-06",
+          "dinner": null,
+          "fruit": [
+            "fruit-01",
+            "fruit-04"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-01",
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        }
+      }
+    },
+    {
+      "weekStart": "2025-12-15",
+      "weekEnd": "2025-12-21",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-20",
+          "dinner": "meal-18",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-02",
+          "dinner": "meal-17",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-14",
+          "dinner": "meal-05",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-03",
+          "dinner": "meal-18",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-04",
+          "dinner": null,
+          "fruit": [
+            "fruit-02"
+          ]
+        }
+      }
+    },
+    {
+      "weekStart": "2026-01-05",
+      "weekEnd": "2026-01-10",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-06",
+          "lunch": "meal-01",
+          "dinner": "meal-12",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-11",
+          "dinner": "meal-13",
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-06",
+          "lunch": null,
+          "dinner": "meal-07",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-09",
+          "dinner": null,
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-07",
+          "lunch": "meal-05",
+          "dinner": null,
+          "fruit": [
+            "fruit-03"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-01",
+          "lunch": null,
+          "dinner": null,
+          "fruit": [
+            "fruit-02"
+          ]
+        }
+      }
+    },
+    {
+      "weekStart": "2026-01-12",
+      "weekEnd": "2026-01-16",
+      "days": {
+        "Monday": {
+          "breakfast": null,
+          "lunch": "meal-14",
+          "dinner": "meal-10",
+          "fruit": []
+        },
+        "Tuesday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-04",
+          "dinner": "meal-07",
+          "fruit": []
+        },
+        "Wednesday": {
+          "breakfast": "bf-06",
+          "lunch": "meal-03",
+          "dinner": "meal-09",
+          "fruit": []
+        },
+        "Thursday": {
+          "breakfast": "bf-04",
+          "lunch": null,
+          "dinner": "meal-06",
+          "fruit": []
+        },
+        "Friday": {
+          "breakfast": "bf-05",
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        },
+        "Saturday": {
+          "breakfast": "bf-09",
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        }
+      }
+    },
+    {
+      "weekStart": "2026-03-02",
+      "weekEnd": "2026-03-07",
+      "days": {
+        "Monday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-01",
+          "dinner": "meal-07",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Tuesday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-02",
+          "dinner": "meal-08",
+          "fruit": [
+            "fruit-05"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-01",
+          "lunch": "meal-03",
+          "dinner": "meal-09",
+          "fruit": [
+            "fruit-02",
+            "fruit-06"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-04",
+          "lunch": "meal-04",
+          "dinner": "meal-05",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-06",
+          "dinner": null,
+          "fruit": [
+            "fruit-05"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-01",
+          "lunch": null,
+          "dinner": null,
+          "fruit": [
+            "fruit-02",
+            "fruit-06"
+          ]
+        }
+      }
+    },
+    {
+      "weekStart": "2026-03-09",
+      "weekEnd": "2026-03-14",
+      "days": {
+        "Monday": {
+          "breakfast": [],
+          "drinks": [],
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        },
+        "Tuesday": {
+          "breakfast": [
+            "bf-01"
+          ],
+          "drinks": [
+            "drink-01"
+          ],
+          "lunch": "meal-29",
+          "dinner": "meal-11",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": [
+            "bf-06",
+            "bf-10",
+            "bf-05"
+          ],
+          "drinks": [
+            "drink-01"
+          ],
+          "lunch": "meal-01",
+          "dinner": "meal-07",
+          "fruit": [
+            "fruit-05"
+          ]
+        },
+        "Thursday": {
+          "breakfast": [
+            "bf-02",
+            "bf-03"
+          ],
+          "drinks": [
+            "drink-01"
+          ],
+          "lunch": "meal-03",
+          "dinner": "meal-12",
+          "fruit": [
+            "fruit-03",
+            "fruit-02"
+          ]
+        },
+        "Friday": {
+          "breakfast": [
+            "bf-04"
+          ],
+          "drinks": [
+            "drink-01"
+          ],
+          "lunch": "meal-27",
+          "dinner": "meal-24",
+          "fruit": [
+            "fruit-01"
+          ]
+        },
+        "Saturday": {
+          "breakfast": [
+            "bf-12"
+          ],
+          "drinks": [
+            "drink-01",
+            "drink-03"
+          ],
+          "lunch": "meal-10",
+          "dinner": null,
+          "fruit": [
+            "fruit-03"
+          ]
+        }
+      },
+      "leftovers": [
+        {
+          "ingredientId": "ing-beans",
+          "name": "Beans",
+          "category": "vegetable",
+          "qty": 100,
+          "qtyDisplay": "100",
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ing-potato",
+          "name": "Potato",
+          "category": "vegetable",
+          "qty": 500,
+          "qtyDisplay": "500",
+          "unit": "g"
+        },
+        {
+          "ingredientId": "ing-milk",
+          "name": "Milk",
+          "category": "dairy",
+          "qty": 1,
+          "qtyDisplay": "1",
+          "unit": "nos"
+        },
+        {
+          "ingredientId": "fruit-02",
+          "name": "Pomegranate",
+          "category": "fruit",
+          "qty": 1,
+          "qtyDisplay": "1",
+          "unit": "nos"
+        }
+      ],
+      "preferences": {
+        "skipDays": [
+          "Monday"
+        ],
+        "skipMeals": [
+          {
+            "day": "Saturday",
+            "mealType": "dinner"
+          }
+        ],
+        "specialRequests": [],
+        "chickenCount": 2
+      },
+      "quantities": {
+        "meal-26": 4,
+        "meal-24": 4,
+        "meal-27": 4
+      },
+      "baseOverrides": {
+        "Tuesday-lunch": "none"
+      },
+      "sideOverrides": {
+        "Tuesday-lunch": ""
+      },
+      "groceryCache": {
+        "groceryData": {
+          "categories": [
+            {
+              "name": "vegetable",
+              "items": [
+                {
+                  "id": "ing-capsicum",
+                  "name": "Capsicum",
+                  "qty": 4,
+                  "unit": "nos",
+                  "needed": 50,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-carrot",
+                  "name": "Carrot",
+                  "qty": 250,
+                  "unit": "g",
+                  "needed": 50,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-coriander",
+                  "name": "Coriander (Dhaniya)",
+                  "qty": 1,
+                  "unit": "bunch",
+                  "needed": 20,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-green-chilli",
+                  "name": "Green Chilli",
+                  "qty": 100,
+                  "unit": "g",
+                  "needed": 20,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-lemon",
+                  "name": "Lemon",
+                  "qty": 10,
+                  "unit": "nos",
+                  "needed": 4,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-matar",
+                  "name": "Matar (Peas)",
+                  "qty": 250,
+                  "unit": "g",
+                  "needed": 50,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-onion",
+                  "name": "Onion",
+                  "qty": 1,
+                  "unit": "kg",
+                  "needed": 0.73,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-tomato",
+                  "name": "Tomato",
+                  "qty": 1,
+                  "unit": "kg",
+                  "needed": 0.55,
+                  "leftover": 0
+                },
+                {
+                  "name": "Beans",
+                  "qty": 250,
+                  "unit": "g",
+                  "id": "custom-1773126385810"
+                },
+                {
+                  "name": "Potato",
+                  "qty": 1,
+                  "unit": "kg",
+                  "id": "custom-1773126415052"
+                }
+              ]
+            },
+            {
+              "name": "dairy",
+              "items": [
+                {
+                  "id": "ing-curd",
+                  "name": "Curd",
+                  "qty": 250,
+                  "unit": "g",
+                  "needed": 125,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-milk",
+                  "name": "Milk",
+                  "qty": 6,
+                  "unit": "nos",
+                  "needed": 549,
+                  "leftover": 1
+                }
+              ]
+            },
+            {
+              "name": "protein",
+              "items": [
+                {
+                  "id": "ing-chicken-curry",
+                  "name": "Chicken (Curry Cut)",
+                  "qty": 500,
+                  "unit": "g",
+                  "needed": 500,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-eggs",
+                  "name": "Eggs",
+                  "qty": 10,
+                  "unit": "nos",
+                  "needed": 9,
+                  "leftover": 0
+                },
+                {
+                  "name": "Mutton",
+                  "qty": 500,
+                  "unit": "g",
+                  "id": "custom-1773126458372"
+                },
+                {
+                  "name": "Paneer",
+                  "qty": 1,
+                  "unit": "nos",
+                  "id": "custom-1773126464574"
+                }
+              ]
+            },
+            {
+              "name": "staple",
+              "items": [
+                {
+                  "id": "ing-atta",
+                  "name": "Atta (Wheat Flour)",
+                  "qty": 1,
+                  "unit": "kg",
+                  "needed": 0.3,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-laal-chana",
+                  "name": "Laal Chana",
+                  "qty": 500,
+                  "unit": "g",
+                  "needed": 200,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-oil",
+                  "name": "Oil",
+                  "qty": 1,
+                  "unit": "l",
+                  "needed": 1,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-rajma",
+                  "name": "Rajma",
+                  "qty": 500,
+                  "unit": "g",
+                  "needed": 200,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-rice",
+                  "name": "Rice",
+                  "qty": 1,
+                  "unit": "kg",
+                  "needed": 0.75,
+                  "leftover": 0
+                }
+              ]
+            },
+            {
+              "name": "bakery",
+              "items": [
+                {
+                  "id": "ing-bread",
+                  "name": "Bread",
+                  "qty": 1,
+                  "unit": "pk",
+                  "needed": 8,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-pav",
+                  "name": "Pav",
+                  "qty": 1,
+                  "unit": "pk",
+                  "needed": 4,
+                  "leftover": 0
+                }
+              ]
+            },
+            {
+              "name": "ready-mix",
+              "items": [
+                {
+                  "id": "ing-chilla-mix",
+                  "name": "Chilla Mix",
+                  "qty": 1,
+                  "unit": "pk",
+                  "needed": 100,
+                  "leftover": 0
+                },
+                {
+                  "id": "ing-upma-mix",
+                  "name": "Upma Mix",
+                  "qty": 1,
+                  "unit": "pk",
+                  "needed": 100,
+                  "leftover": 0
+                }
+              ]
+            },
+            {
+              "name": "spice",
+              "items": [
+                {
+                  "id": "ing-ginger-garlic",
+                  "name": "Ginger Garlic Paste",
+                  "qty": 1,
+                  "unit": "pk",
+                  "needed": 70,
+                  "leftover": 0
+                }
+              ]
+            },
+            {
+              "name": "fruit",
+              "items": [
+                {
+                  "id": "fruit-03",
+                  "name": "Apple",
+                  "qty": 2,
+                  "unit": "nos",
+                  "needed": 4,
+                  "leftover": 0
+                },
+                {
+                  "id": "fruit-05",
+                  "name": "Grapes",
+                  "qty": 1,
+                  "unit": "box",
+                  "needed": 1,
+                  "leftover": 0
+                },
+                {
+                  "id": "fruit-01",
+                  "name": "Guava",
+                  "qty": 2,
+                  "unit": "nos",
+                  "needed": 4,
+                  "leftover": 0
+                },
+                {
+                  "id": "fruit-02",
+                  "name": "Pomegranate",
+                  "qty": 2,
+                  "unit": "nos",
+                  "needed": 1,
+                  "leftover": 1
+                }
+              ]
+            }
+          ],
+          "totalItems": 26
+        },
+        "aiSuggestions": null,
+        "removedItems": [
+          "ing-capsicum",
+          "ing-matar",
+          "ing-green-chilli",
+          "ing-atta",
+          "ing-laal-chana",
+          "ing-oil",
+          "ing-rajma",
+          "ing-rice",
+          "ing-chilla-mix",
+          "ing-upma-mix",
+          "ing-ginger-garlic"
+        ]
+      },
+      "aiPlanCache": {
+        "Monday": {
+          "breakfast": null,
+          "lunch": null,
+          "dinner": null,
+          "fruit": []
+        },
+        "Tuesday": {
+          "breakfast": "bf-13",
+          "lunch": "meal-28",
+          "dinner": "meal-23",
+          "fruit": [
+            "fruit-02"
+          ]
+        },
+        "Wednesday": {
+          "breakfast": "bf-03",
+          "lunch": "meal-15",
+          "dinner": "meal-19",
+          "fruit": [
+            "fruit-01",
+            "fruit-03"
+          ]
+        },
+        "Thursday": {
+          "breakfast": "bf-08",
+          "lunch": "meal-24",
+          "dinner": "meal-12",
+          "fruit": [
+            "fruit-05"
+          ]
+        },
+        "Friday": {
+          "breakfast": "bf-02",
+          "lunch": "meal-11",
+          "dinner": "bf-09",
+          "fruit": [
+            "fruit-04"
+          ]
+        },
+        "Saturday": {
+          "breakfast": "bf-05",
+          "lunch": "meal-26",
+          "dinner": null,
+          "fruit": [
+            "fruit-06",
+            "fruit-01"
+          ]
+        }
+      },
+      "freshAiSuggestions": []
+    }
+  ]
+}

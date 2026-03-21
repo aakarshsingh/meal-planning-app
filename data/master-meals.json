@@ -236,7 +236,7 @@
     },
     {
       "id": "bf-13",
-      "name": "Aloo (+Gobi) Paratha",
+      "name": "Aloo Paratha",
       "defaultQty": 2,
       "unit": "nos",
       "ingredients": []
@@ -1026,6 +1026,16 @@
       "slot": "flexible",
       "base": "rice",
       "suggestedSide": "side-01",
+      "ingredients": []
+    },
+    {
+      "id": "meal-29",
+      "name": "Aloo Paratha",
+      "type": "veg",
+      "slot": "flexible",
+      "base": "none",
+      "defaultQty": 2,
+      "unit": "nos",
       "ingredients": []
     }
   ],
